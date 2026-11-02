@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  AI-Based Lead Scoring System
+  Author: Priya Sharma
+  Role: AI/ML Intern Candidate (Round 2), Leadonspot
+  Tech Stack: Vanilla HTML5, CSS3, Plain JavaScript (Zero external dependencies)
+  
+  About this project:
+  This application provides sales teams with an instant, 100% deterministic, 
+  and explainable lead score (0-100). All weights and criteria are transparent. 
+  Scores are never random or hallucinatory. An optional LLM hook can rewrite 
+  the explanation for executive summaries without ever touching the score.
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Lead Scorer - Explainable B2B Sales Lead Scoring</title>
+  <style>
+    /* CSS Variables & Global Resets */
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #eef2ff;
+      --hot-color: #dc2626;
+      --hot-bg: #fef2f2;
+      --warm-color: #d97706;
+      --warm-bg: #fffbeb;
+      --cold-color: #2563eb;
+      --cold-bg: #eff6ff;
+      --success: #16a34a;
+      --success-bg: #f0fdf4;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --radius: 12px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 0 16px 40px;
+    }
+
+    /* Container */
+    .app-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      padding: 24px 0 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .brand-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .brand-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--primary-light);
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-tagline {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 10px;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      background: var(--bg-card);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      padding: 24px;
+      margin-bottom: 24px;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* Scorer Grid Layout */
+    .scorer-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .scorer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Form Styles */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .form-label .required {
+      color: var(--hot-color);
+    }
+
+    .input-field,
+    .select-field,
+    .textarea-field {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text-main);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .input-field:focus,
+    .select-field:focus,
+    .textarea-field:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    .input-field.input-error {
+      border-color: var(--hot-color);
+      background-color: #fffaf0;
+    }
+
+    .error-text {
+      font-size: 11px;
+      color: var(--hot-color);
+      min-height: 16px;
+    }
+
+    .textarea-field {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: var(--text-main);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    /* Empty State */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.8;
+    }
+
+    .empty-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .empty-desc {
+      font-size: 13px;
+      max-width: 320px;
+      margin-bottom: 20px;
+    }
+
+    /* Results Card */
+    .results-active {
+      display: none;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .score-summary-row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 500px) {
+      .score-summary-row {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+
+    /* Circular SVG Gauge */
+    .gauge-wrapper {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      flex-shrink: 0;
+    }
+
+    .gauge-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .gauge-bg {
+      fill: none;
+      stroke: #e2e8f0;
+      stroke-width: 9;
+    }
+
+    .gauge-val {
+      fill: none;
+      stroke-width: 9;
+      stroke-linecap: round;
+      stroke-dasharray: 339.29;
+      stroke-dashoffset: 339.29;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;
+    }
+
+    .gauge-center {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gauge-number {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--text-main);
+    }
+
+    .gauge-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .score-meta {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .badge-tier,
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tier-hot {
+      background: var(--hot-bg);
+      color: var(--hot-color);
+      border: 1px solid #fecaca;
+    }
+
+    .tier-warm {
+      background: var(--warm-bg);
+      color: var(--warm-color);
+      border: 1px solid #fed7aa;
+    }
+
+    .tier-cold {
+      background: var(--cold-bg);
+      color: var(--cold-color);
+      border: 1px solid #bfdbfe;
+    }
+
+    .lead-verdict {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .confidence-tag {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Next Action Card */
+    .next-action-card {
+      background: #f1f5f9;
+      border-left: 4px solid var(--primary);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .action-header {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .action-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* Factor Lists (Positives & Negatives) */
+    .factors-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .factors-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .factor-col {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .factor-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .factor-title.pos { color: var(--success); }
+    .factor-title.neg { color: var(--hot-color); }
+
+    .factor-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .factor-item {
+      font-size: 12px;
+      line-height: 1.4;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .factor-item.pos { color: #15803d; }
+    .factor-item.neg { color: #b91c1c; }
+
+    /* Breakdown Table */
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+
+    .breakdown-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 8px 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .breakdown-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 999px;
+      transition: width 0.6s ease;
+    }
+
+    /* Explanation Section */
+    .explanation-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.6;
+    }
+
+    .explanation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .explanation-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* What-If Simulator Section */
+    .simulator-card {
+      margin-top: 24px;
+      border-top: 2px solid var(--primary);
+    }
+
+    .simulator-toggle-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+    }
+
+    .slider-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .slider-item {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .slider-val {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .weight-range {
+      width: 100%;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    .simulator-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: #f1f5f9;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .sim-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 12px;
+    }
+
+    .sim-table th, .sim-table td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tag-change {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    /* History & Summary Strip */
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .metric-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+
+    .metric-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .metric-title {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .history-table th {
+      padding: 10px 8px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .history-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    /* Test Cases Cards */
+    .test-cases-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .test-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .test-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .test-lead-name {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .test-lead-company {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .test-attr-list {
+      font-size: 12px;
+      color: #334155;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 32px 0 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    /* Modal / Popup for Settings */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header>
+      <div class="brand-group">
+        <div class="brand-title">
+          <span>Lead Scorer</span>
+          <span class="badge-tag">AI/ML Intern Project</span>
+        </div>
+        <p class="brand-tagline">100% Deterministic, Explainable Lead Scoring for B2B Sales Teams</p>
+      </div>
+
+      <nav class="nav-tabs">
+        <button class="tab-btn active" data-tab="tab-scorer" onclick="switchTab('tab-scorer')">🎯 Scorer</button>
+        <button class="tab-btn" data-tab="tab-methodology" onclick="switchTab('tab-methodology')">⚖️ Methodology</button>
+        <button class="tab-btn" data-tab="tab-test-cases" onclick="switchTab('tab-test-cases')">🧪 Test Cases</button>
+        <button class="tab-btn" data-tab="tab-history" onclick="switchTab('tab-history')">📜 History</button>
+        <button class="tab-btn" data-tab="tab-settings" onclick="switchTab('tab-settings')">⚙️ AI Settings</button>
+      </nav>
+    </header>
+
+    <!-- TAB 1: MAIN SCORER -->
+    <div id="tab-scorer" class="tab-content active">
+      <div class="scorer-grid">
+        
+        <!-- Left: Form Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Lead Information</h2>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="loadSampleLead()">
+              📋 Load Sample Lead
+            </button>
+          </div>
+
+          <form id="leadForm" novalidate onsubmit="handleFormSubmit(event)">
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="leadName">Contact Name <span class="required">*</span></label>
+                <input type="text" id="leadName" class="input-field" placeholder="e.g. Rahul Sharma" oninput="validateForm()">
+                <span class="error-text" id="err-leadName"></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="companyName">Company Name <span class="required">*</span></label>
+                <input type="text" id="companyName" class="input-field" placeholder="e.g. ABC Technologies" oninput="validateForm()">
+                <span class="error-text" id="err-companyName"></span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="website">Company Website</label>
+                <input type="text" id="website" class="input-field" placeholder="e.g. www.abctechnologies.com" oninput="validateForm()">
+                <span class="error-text" id="err-website"></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="jobTitle">Job Title</label>
+                <input type="text" id="jobTitle" class="input-field" placeholder="e.g. Founder, CEO, Manager" oninput="validateForm()">
+                <span class="error-text" id="err-jobTitle"></span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="industry">Industry</label>
+                <select id="industry" class="select-field" onchange="validateForm()">
+                  <option value="">Select Industry...</option>
+                  <option value="IT Services">IT Services</option>
+                  <option value="SaaS">SaaS</option>
+                  <option value="Finance">Finance</option>
+                  <option value="E-commerce">E-commerce</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Manufacturing">Manufacturing</option>
+                  <option value="Retail">Retail</option>
+                  <option value="Education">Education</option>
+                  <option value="Other">Other</option>
+                </select>
+                <span class="error-text" id="err-industry"></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="location">Company Location</label>
+                <input type="text" id="location" class="input-field" placeholder="e.g. Bangalore, Mumbai, Pune" oninput="validateForm()">
+                <span class="error-text" id="err-location"></span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="companySize">Company Size</label>
+                <select id="companySize" class="select-field" onchange="validateForm()">
+                  <option value="">Select Size...</option>
+                  <option value="1-10">1-10 employees</option>
+                  <option value="10-50">10-50 employees</option>
+                  <option value="50-100">50-100 employees</option>
+                  <option value="100-500">100-500 employees</option>
+                  <option value="500+">500+ employees</option>
+                </select>
+                <span class="error-text" id="err-companySize"></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="leadSource">Lead Source</label>
+                <select id="leadSource" class="select-field" onchange="validateForm()">
+                  <option value="">Select Source...</option>
+                  <option value="Website">Website</option>
+                  <option value="Referral">Referral</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="Event">Event</option>
+                  <option value="Cold List">Cold List</option>
+                  <option value="Other">Other</option>
+                </select>
+                <span class="error-text" id="err-leadSource"></span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="email">Work Email</label>
+                <input type="email" id="email" class="input-field" placeholder="e.g. rahul@example.com" oninput="validateForm()">
+                <span class="error-text" id="err-email"></span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="phone">Phone Number</label>
+                <input type="tel" id="phone" class="input-field" placeholder="e.g. +91 9876543210" oninput="validateForm()">
+                <span class="error-text" id="err-phone"></span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="requirement">Requirement / Project Needs</label>
+              <textarea id="requirement" class="textarea-field" placeholder="e.g. Looking for CRM software and automation solution for sales team" oninput="validateForm()"></textarea>
+              <span class="error-text" id="err-requirement"></span>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="btnSubmitScore" class="btn btn-primary" style="flex: 1;" disabled>
+                🚀 Score Lead
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                Reset
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- Right: Results Card -->
+        <div class="card" id="resultsContainer">
+          
+          <!-- Empty State -->
+          <div id="resultsEmpty" class="empty-state">
+            <div class="empty-icon">📊</div>
+            <div class="empty-title">No Lead Scored Yet</div>
+            <p class="empty-desc">
+              Fill in the lead details on the left, or click <strong>Load Sample Lead</strong> to see the explainable scoring engine in action.
+            </p>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="loadSampleLead()">
+              Load Rahul Sharma Sample Lead
+            </button>
+          </div>
+
+          <!-- Active Results (Shown after scoring) -->
+          <div id="resultsActive" class="results-active">
+            
+            <div class="card-header" style="margin-bottom: 16px;">
+              <div>
+                <h3 class="card-title" id="resLeadTitle">ABC Technologies</h3>
+                <span style="font-size: 13px; color: var(--text-muted);" id="resLeadContact">Rahul Sharma</span>
+              </div>
+              <span id="resConfidenceBadge" class="badge-tag">Confidence: High</span>
+            </div>
+
+            <!-- Score Summary & Circular Gauge -->
+            <div class="score-summary-row">
+              <div class="gauge-wrapper">
+                <svg class="gauge-svg" viewBox="0 0 120 120">
+                  <circle class="gauge-bg" cx="60" cy="60" r="54"></circle>
+                  <circle id="gaugeCircle" class="gauge-val" cx="60" cy="60" r="54"></circle>
+                </svg>
+                <div class="gauge-center">
+                  <div class="gauge-number" id="resScoreNum">0</div>
+                  <div class="gauge-label">/ 100</div>
+                </div>
+              </div>
+
+              <div class="score-meta">
+                <div id="resTierBadge" class="badge-tier tier-hot">Hot Lead</div>
+                <div id="resVerdict" class="lead-verdict">Strong purchase intent with executive authority.</div>
+                <div id="resConfidenceText" class="confidence-tag">100% of data points available.</div>
+              </div>
+            </div>
+
+            <!-- Next Action Recommended -->
+            <div class="next-action-card">
+              <div class="action-header">Recommended Next Action</div>
+              <div class="action-text" id="resActionText">Call within 24 hours & schedule product demo</div>
+            </div>
+
+            <!-- Key Positives & Deductions -->
+            <div class="factors-grid">
+              <div class="factor-col">
+                <div class="factor-title pos">✓ Positive Drivers</div>
+                <ul class="factor-list" id="resPositivesList"></ul>
+              </div>
+              <div class="factor-col">
+                <div class="factor-title neg">⚠ Deductions / Missing</div>
+                <ul class="factor-list" id="resNegativesList"></ul>
+              </div>
+            </div>
+
+            <!-- Breakdown Table -->
+            <div style="margin-bottom: 16px;">
+              <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+                Weighted Breakdown
+              </div>
+              <table class="breakdown-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th style="width: 100px;">Earned / Max</th>
+                    <th style="width: 140px;">Impact</th>
+                  </tr>
+                </thead>
+                <tbody id="resBreakdownBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Scoring Explanation Paragraph -->
+            <div class="explanation-box">
+              <div class="explanation-header">
+                <span class="explanation-title">Scoring Explanation</span>
+                <button type="button" id="btnAiRefine" class="btn btn-secondary btn-sm" onclick="handleAiRefine()" title="Generate custom executive summary with Gemini/OpenAI">
+                  ✨ Refine with AI
+                </button>
+              </div>
+              <p id="resExplanationText"></p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- What-If Weight Simulator (Collapsible) -->
+      <div class="card simulator-card">
+        <button type="button" class="simulator-toggle-btn" onclick="toggleSimulator()">
+          <div>
+            <span style="font-size: 16px; font-weight: 700; color: var(--text-main);">🔬 What-If Weight Simulator</span>
+            <p style="font-size: 12px; color: var(--text-muted);">Adjust individual scoring weights and see how lead scores, tiers, and test benchmarks react live.</p>
+          </div>
+          <span id="simToggleArrow" style="font-size: 20px; color: var(--primary);">▼</span>
+        </button>
+
+        <div id="simPanelContent" style="display: none; margin-top: 16px;">
+          
+          <div class="simulator-status-bar">
+            <div>
+              <strong id="simTotalWeights">Total Weights: 100 / 100</strong>
+              <span id="simNormalNote" style="color: var(--text-muted); margin-left: 8px;">(Standard scale)</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="resetWeightsToDefault()">
+              ↺ Reset to Default Weights
+            </button>
+          </div>
+
+          <!-- 7 Sliders -->
+          <div class="slider-grid">
+            
+            <div class="slider-item">
+              <div class="slider-header">
+                <span>Job Title Weight</span>
+                <span class="slider-val" id="val-jobTitle">20</span>
+              </div>
+              <input type="range" class="weight-range" id="slider-jobTitle" min="0" max="40" value="20" oninput="handleWeightSliderChange('jobTitle', this.value)">
+            </div>
+
+            <div class="slider-item">
+              <div class="slider-header">
+                <span>Requirement Weight</span>
+                <span class="slider-val" id="val-requirement">20</span>
+              </div>
+              <input type="range" class="weight-range" id="slider-requirement" min="0" max="40" value="20" oninput="handleWeightSliderChange('requirement', this.value)">
+            </div>
+
+            <div class="slider-item">
+              <div class="slider-header">
+                <span>Company Size Weight</span>
+                <span class="slider-val" id="val-companySize">15</span>
+              </div>
+              <input type="range" class="weight-range" id="slider-companySize" min="0" max="40" value="15" oninput="handleWeightSliderChange('companySize', this.value)">
+            </div>
+
+            <div class="slider-item">
+              <div class="slider-header">
+                <span>Industry Weight</span>
+                <span class="slider-val" id="val-industry">15</span>
+              </div>
+              <input type="range" class="weight-range" id="slider-industry" min="0" max="40" value="15" oninput="handleWeightSliderChange('industry', this.value)">
+            </div>
+
+            <div class="slider-item">
+              <div class="slider-header">
+                <span>Lead Source Weight</span>
+                <span class="slider-val" id="val-leadSource">10</span>
+              </div>
+              <input type="range" class="weight-range" id="slider-leadSource" min="0" max="40" value="10" oninput="handleWeightSliderChange('leadSource', this.value)">
+            </div>
+
+            <div class="slider-item">
+              <div class="slider-header">
+                <span>Contact Details Weight</span>
+                <span class="slider-val" id="val-contact">10</span>
+              </div>
+              <input type="range" class="weight-range" id="slider-contact" min="0" max="40" value="10" oninput="handleWeightSliderChange('contact', this.value)">
+            </div>
+
+            <div class="slider-item">
+              <div class="slider-header">
+                <span>Location Weight</span>
+                <span class="slider-val" id="val-location">10</span>
+              </div>
+              <input type="range" class="weight-range" id="slider-location" min="0" max="40" value="10" oninput="handleWeightSliderChange('location', this.value)">
+            </div>
+
+          </div>
+
+          <!-- Benchmark Leads Impact Table -->
+          <div style="margin-top: 16px;">
+            <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">
+              Live Benchmark Impact (Current Weights vs Default)
+            </div>
+            <table class="sim-table">
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>Original</th>
+                  <th>New</th>
+                  <th>Class Change</th>
+                </tr>
+              </thead>
+              <tbody id="simBenchmarkBody"></tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: METHODOLOGY -->
+    <div id="tab-methodology" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Scoring Methodology & Criteria</h2>
+          <span class="badge-tag">Total: 100 Points</span>
+        </div>
+        
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
+          This algorithm uses an explainable, deterministic weighted ruleset. Each lead attribute is evaluated against commercial intent, ideal customer profile (ICP) fit, and outreach viability.
+        </p>
+
+        <table class="breakdown-table">
+          <thead>
+            <tr>
+              <th style="width: 160px;">Attribute</th>
+              <th style="width: 90px;">Max Weight</th>
+              <th>Scoring Criteria & Logic</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Job Title</strong></td>
+              <td>20 pts</td>
+              <td>
+                • <strong>20 pts:</strong> Founder, CEO, Owner, Director, VP (C-Level / Key Decision Maker)<br>
+                • <strong>12 pts:</strong> Manager, Head, Lead (Influencer / Department Head)<br>
+                • <strong>5 pts:</strong> Any other specified job title (Individual Contributor)<br>
+                • <strong>0 pts:</strong> Field left blank
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Requirement</strong></td>
+              <td>20 pts</td>
+              <td>
+                • <strong>20 pts:</strong> Text contains intent keywords: <code>CRM</code>, <code>software</code>, <code>ERP</code>, <code>automation</code>, <code>solution</code>, <code>demo</code>, or <code>pricing</code><br>
+                • <strong>8 pts:</strong> Text provided without specific commercial intent keywords<br>
+                • <strong>0 pts:</strong> No requirement specified
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Company Size</strong></td>
+              <td>15 pts</td>
+              <td>
+                • <strong>15 pts:</strong> 50-100 or 100-500 employees (Prime target mid-market sweet spot)<br>
+                • <strong>12 pts:</strong> 500+ employees (Enterprise tier)<br>
+                • <strong>10 pts:</strong> 10-50 employees (Growing small business)<br>
+                • <strong>5 pts:</strong> 1-10 employees (Micro startup)<br>
+                • <strong>0 pts:</strong> Not provided
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Industry</strong></td>
+              <td>15 pts</td>
+              <td>
+                • <strong>15 pts:</strong> IT Services, SaaS, Finance, E-commerce (High adoption ICP)<br>
+                • <strong>7 pts:</strong> Other non-empty industry (Secondary sectors)<br>
+                • <strong>0 pts:</strong> Not selected
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Lead Source</strong></td>
+              <td>10 pts</td>
+              <td>
+                • <strong>10 pts:</strong> Website or Referral (High-intent inbound)<br>
+                • <strong>7 pts:</strong> LinkedIn or Event (Warm outreach)<br>
+                • <strong>3 pts:</strong> Cold List or Other (Outbound / Unsolicited)<br>
+                • <strong>0 pts:</strong> Not selected
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Contact Details</strong></td>
+              <td>10 pts</td>
+              <td>
+                • <strong>Corporate Email (4 pts):</strong> Corporate domain email = 4 pts. Free webmail (<code>gmail</code>, <code>yahoo</code>, <code>hotmail</code>, <code>example.com</code>) = 2 pts. Missing = 0 pts.<br>
+                • <strong>Valid Phone (3 pts):</strong> 10-13 digit phone number provided = 3 pts. Missing = 0 pts.<br>
+                • <strong>Company Website (3 pts):</strong> Valid web domain provided = 3 pts. Missing = 0 pts.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Company Location</strong></td>
+              <td>10 pts</td>
+              <td>
+                • <strong>10 pts:</strong> Target Tier-1 Indian tech hubs: Bangalore, Mumbai, Delhi, Hyderabad, Pune, Chennai, Gurgaon, Noida<br>
+                • <strong>6 pts:</strong> Any other specified city/region<br>
+                • <strong>0 pts:</strong> Field left blank
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 24px;">
+          <div style="background: var(--hot-bg); border: 1px solid #fecaca; border-radius: 8px; padding: 14px;">
+            <div style="font-weight: 700; color: var(--hot-color); font-size: 14px;">🔥 Hot Leads (Score ≥ 70)</div>
+            <p style="font-size: 12px; color: #7f1d1d; margin-top: 4px;">High ICP fit, executive authority, urgent requirement. Call within 24 hours & schedule product demo.</p>
+          </div>
+          <div style="background: var(--warm-bg); border: 1px solid #fed7aa; border-radius: 8px; padding: 14px;">
+            <div style="font-weight: 700; color: var(--warm-color); font-size: 14px;">⚡ Warm Leads (Score 40-69)</div>
+            <p style="font-size: 12px; color: #78350f; margin-top: 4px;">Moderate ICP fit or influencer level. Send personalised email and schedule a follow-up in 3 days.</p>
+          </div>
+          <div style="background: var(--cold-bg); border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px;">
+            <div style="font-weight: 700; color: var(--cold-color); font-size: 14px;">❄️ Cold Leads (Score &lt; 40)</div>
+            <p style="font-size: 12px; color: #1e3a8a; margin-top: 4px;">Low fit, missing contact points, or micro business. Enroll into automated nurture newsletter campaigns.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 3: TEST CASES -->
+    <div id="tab-test-cases" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Benchmark Test Leads</h2>
+          <span style="font-size: 12px; color: var(--text-muted);">One-click validation of scoring accuracy</span>
+        </div>
+        
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+          Click "Load & Score" on any test case to populate the form and evaluate the exact deterministic breakdown.
+        </p>
+
+        <div class="test-cases-grid" id="testCasesContainer">
+          <!-- Rendered dynamically by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: HISTORY -->
+    <div id="tab-history" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Lead Scoring Audit Log</h2>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="exportHistoryToCsv()">
+              📥 Export CSV
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearLeadHistory()">
+              🗑 Clear History
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Summary Strip -->
+        <div class="summary-strip">
+          <div class="metric-card">
+            <div class="metric-val" id="metricTotal">0</div>
+            <div class="metric-title">Total Leads</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-val" id="metricHot" style="color: var(--hot-color);">0</div>
+            <div class="metric-title">Hot Leads</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-val" id="metricWarm" style="color: var(--warm-color);">0</div>
+            <div class="metric-title">Warm Leads</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-val" id="metricCold" style="color: var(--cold-color);">0</div>
+            <div class="metric-title">Cold Leads</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-val" id="metricAvg">0</div>
+            <div class="metric-title">Avg Score</div>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Lead / Company</th>
+                <th>Job Title</th>
+                <th>Score</th>
+                <th>Tier</th>
+                <th>Action</th>
+                <th style="width: 80px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                  No leads scored yet. Score a lead to build your audit log.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 5: AI SETTINGS -->
+    <div id="tab-settings" class="tab-content">
+      <div class="card" style="max-width: 640px; margin: 0 auto;">
+        <div class="card-header">
+          <h2 class="card-title">AI Explanation Settings (Optional)</h2>
+          <span class="badge-tag">LLM Enhancement</span>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          The scoring system is 100% deterministic and runs entirely client-side. The LLM is <strong>strictly used to rewrite the scoring explanation</strong> into an executive sales briefing ("do not change the score").
+        </p>
+
+        <div style="background: #f1f5f9; border-left: 3px solid var(--primary); padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 20px;">
+          <strong>🔒 Security & Privacy:</strong> Your API key is stored exclusively in your browser's <code>localStorage</code>. It is never transmitted to any third-party server.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="aiProvider">AI Provider</label>
+          <select id="aiProvider" class="select-field">
+            <option value="gemini">Google Gemini (gemini-1.5-flash / gemini-2.0)</option>
+            <option value="openai">OpenAI (gpt-4o-mini)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="apiKeyInput">API Key</label>
+          <input type="password" id="apiKeyInput" class="input-field" placeholder="Paste your Gemini or OpenAI API key here">
+          <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Leave blank to use the built-in deterministic explanation generator.
+          </span>
+        </div>
+
+        <div class="form-actions" style="margin-top: 20px;">
+          <button type="button" class="btn btn-primary" onclick="saveApiKey()">
+            Save Settings
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="clearApiKey()">
+            Remove Key
+          </button>
+        </div>
+
+        <div id="apiKeyStatus" style="font-size: 12px; margin-top: 12px; min-height: 18px;"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <p>Lead Scorer • Built by <strong>Priya Sharma</strong> for Leadonspot AI/ML Intern Evaluation (Round 2)</p>
+      <p style="font-size: 11px; margin-top: 4px; color: #94a3b8;">Deterministic Weighted Scoring Engine • Zero External CDNs • Client-Side Execution</p>
+    </footer>
+
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. SCORING WEIGHTS & CONSTANTS
+    // ==========================================
+    const SCORING_WEIGHTS = {
+      jobTitle: 20,
+      requirement: 20,
+      companySize: 15,
+      industry: 15,
+      leadSource: 10,
+      contact: 10,
+      location: 10
+    };
+    const DEFAULT_WEIGHTS = SCORING_WEIGHTS;
+
+    // Live working weights (modified by What-If Simulator)
+    let currentWeights = { ...DEFAULT_WEIGHTS };
+
+    // Active lead result cache
+    let currentLeadData = null;
+    let currentLeadResult = null;
+
+    // Target cities for top tier location score
+    const TARGET_CITIES = [
+      "bangalore", "mumbai", "delhi", "hyderabad",
+      "pune", "chennai", "gurgaon", "noida"
+    ];
+
+    // Commercial intent keywords for requirement
+    const INTENT_KEYWORDS = [
+      "crm", "software", "erp", "automation",
+      "solution", "demo", "pricing"
+    ];
+
+    // Generic personal email domains
+    const GENERIC_EMAIL_DOMAINS = [
+      "example.com", "gmail.com", "yahoo.com",
+      "hotmail.com", "outlook.com", "icloud.com"
+    ];
+
+    // Benchmark test leads
+    const BENCHMARK_LEADS = [
+      {
+        id: "sample-1",
+        name: "Rahul Sharma",
+        company: "ABC Technologies",
+        website: "www.abctechnologies.com",
+        jobTitle: "Founder",
+        industry: "IT Services",
+        location: "Bangalore",
+        companySize: "50-100",
+        leadSource: "Website",
+        requirement: "Looking for CRM software",
+        email: "rahul@example.com",
+        phone: "+91 9876543210",
+        label: "Default Sample Lead (Founder, Bangalore, CRM Intent)"
+      },
+      {
+        id: "hot-1",
+        name: "Vikram Malhotra",
+        company: "Nexus FinTech Labs",
+        website: "https://nexusfintech.io",
+        jobTitle: "VP of Engineering",
+        industry: "Finance",
+        location: "Mumbai",
+        companySize: "100-500",
+        leadSource: "Referral",
+        requirement: "Urgent need for enterprise ERP and CRM automation platform for 300 users.",
+        email: "vikram@nexusfintech.io",
+        phone: "+91 9820011223",
+        label: "Benchmark 1: Hot Enterprise Lead (100% Fit)"
+      },
+      {
+        id: "warm-1",
+        name: "Neha Gupta",
+        company: "Apex Retailers",
+        website: "https://apexretail.co.in",
+        jobTitle: "Marketing Head",
+        industry: "Retail",
+        location: "Jaipur",
+        companySize: "10-50",
+        leadSource: "LinkedIn",
+        requirement: "Looking for email campaigns and customer engagement tool",
+        email: "neha.gupta@apexretail.co.in",
+        phone: "+91 9123456789",
+        label: "Benchmark 2: Warm Lead (Mid-Tier Fit, Non-CRM Intent)"
+      },
+      {
+        id: "cold-1",
+        name: "Amit Roy",
+        company: "Roy Handloom Workshop",
+        website: "",
+        jobTitle: "Intern",
+        industry: "Manufacturing",
+        location: "Patna",
+        companySize: "1-10",
+        leadSource: "Cold List",
+        requirement: "Need basic catalog info",
+        email: "amit@gmail.com",
+        phone: "",
+        label: "Benchmark 3: Cold Outbound Lead (Micro-team, Missing Phone)"
+      },
+      {
+        id: "incomplete-1",
+        name: "Sneha Patel",
+        company: "QuickTech",
+        website: "",
+        jobTitle: "Operations",
+        industry: "IT Services",
+        location: "",
+        companySize: "",
+        leadSource: "Other",
+        requirement: "",
+        email: "sneha@quicktech.com",
+        phone: "",
+        label: "Benchmark 4: Incomplete Lead (Multiple Missing Fields)"
+      },
+      {
+        id: "gmail-1",
+        name: "Rohan Verma",
+        company: "Verma Consulting",
+        website: "www.vermaconsulting.org",
+        jobTitle: "CEO",
+        industry: "SaaS",
+        location: "Delhi",
+        companySize: "10-50",
+        leadSource: "Website",
+        requirement: "Need a modern CRM demo and automation pricing",
+        email: "rohan.verma2024@gmail.com",
+        phone: "+91 9811223344",
+        label: "Benchmark 5: Free Gmail Lead (Corporate Domain Penalty)"
+      }
+    ];
+
+    // ==========================================
+    // 2. VALIDATION HELPERS
+    // ==========================================
+    function isValidEmail(email) {
+      if (!email || email.trim() === "") return true;
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email.trim());
+    }
+
+    function isValidPhone(phone) {
+      if (!phone || phone.trim() === "") return true;
+      const cleanChars = /^[\d\s\+\-\(\)]+$/.test(phone.trim());
+      const digitsOnly = phone.replace(/\D/g, "");
+      return cleanChars && digitsOnly.length >= 10 && digitsOnly.length <= 13;
+    }
+
+    function isValidWebsite(url) {
+      if (!url || url.trim() === "") return true;
+      const pattern = /^(https?:\/\/)?([a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(\/.*)?$/;
+      return pattern.test(url.trim());
+    }
+
+    let formSubmitted = false;
+
+    function validateForm(showErrors = true) {
+      if (showErrors) formSubmitted = true;
+      const name = document.getElementById("leadName").value.trim();
+      const company = document.getElementById("companyName").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const website = document.getElementById("website").value.trim();
+
+      let isValid = true;
+
+      // Validate Contact Name
+      if (name.length === 0) {
+        if (showErrors && formSubmitted) {
+          document.getElementById("err-leadName").textContent = "Contact name is required";
+          document.getElementById("leadName").classList.add("input-error");
+        } else {
+          document.getElementById("err-leadName").textContent = "";
+          document.getElementById("leadName").classList.remove("input-error");
+        }
+        isValid = false;
+      } else {
+        document.getElementById("err-leadName").textContent = "";
+        document.getElementById("leadName").classList.remove("input-error");
+      }
+
+      // Validate Company Name
+      if (company.length === 0) {
+        if (showErrors && formSubmitted) {
+          document.getElementById("err-companyName").textContent = "Company name is required";
+          document.getElementById("companyName").classList.add("input-error");
+        } else {
+          document.getElementById("err-companyName").textContent = "";
+          document.getElementById("companyName").classList.remove("input-error");
+        }
+        isValid = false;
+      } else {
+        document.getElementById("err-companyName").textContent = "";
+        document.getElementById("companyName").classList.remove("input-error");
+      }
+
+      // Validate Email (optional, but must be valid if given)
+      if (!isValidEmail(email)) {
+        if (showErrors) {
+          document.getElementById("err-email").textContent = "Enter a valid email (e.g. name@domain.com)";
+          document.getElementById("email").classList.add("input-error");
+        }
+        isValid = false;
+      } else {
+        document.getElementById("err-email").textContent = "";
+        document.getElementById("email").classList.remove("input-error");
+      }
+
+      // Validate Phone (optional, but 10-13 digits if given)
+      if (!isValidPhone(phone)) {
+        if (showErrors) {
+          document.getElementById("err-phone").textContent = "Must contain 10-13 digits";
+          document.getElementById("phone").classList.add("input-error");
+        }
+        isValid = false;
+      } else {
+        document.getElementById("err-phone").textContent = "";
+        document.getElementById("phone").classList.remove("input-error");
+      }
+
+      // Validate Website (optional, domain format)
+      if (!isValidWebsite(website)) {
+        if (showErrors) {
+          document.getElementById("err-website").textContent = "Enter a valid website (e.g. domain.com)";
+          document.getElementById("website").classList.add("input-error");
+        }
+        isValid = false;
+      } else {
+        document.getElementById("err-website").textContent = "";
+        document.getElementById("website").classList.remove("input-error");
+      }
+
+      // Toggle Score Button
+      const scoreBtn = document.getElementById("btnSubmitScore");
+      scoreBtn.disabled = !isValid;
+      return isValid;
+    }
+
+    // ==========================================
+    // 3. CATEGORY SCORING FUNCTIONS
+    // ==========================================
+    function getJobTitlePoints(title, maxWeight) {
+      if (!title || title.trim() === "") {
+        return { points: 0, max: maxWeight, note: "Job title missing (0 pts)", isPositive: false };
+      }
+      const lower = title.toLowerCase();
+      const cLevelWords = ["founder", "ceo", "owner", "director", "vp", "vice president", "co-founder", "chief"];
+      const mgrWords = ["manager", "head", "lead", "supervisor"];
+
+      const isCLevel = cLevelWords.some(w => lower.includes(w));
+      if (isCLevel) {
+        return { points: maxWeight, max: maxWeight, note: `Decision-maker role: "${title}" (+${maxWeight} pts)`, isPositive: true };
+      }
+
+      const isManager = mgrWords.some(w => lower.includes(w));
+      if (isManager) {
+        const pts = Math.round(maxWeight * 0.6);
+        return { points: pts, max: maxWeight, note: `Management title: "${title}" (+${pts} pts)`, isPositive: true };
+      }
+
+      const pts = Math.round(maxWeight * 0.25);
+      return { points: pts, max: maxWeight, note: `Individual contributor role: "${title}" (+${pts} pts)`, isPositive: false };
+    }
+
+    function getRequirementPoints(req, maxWeight) {
+      if (!req || req.trim() === "") {
+        return { points: 0, max: maxWeight, note: "No requirement details provided (0 pts)", isPositive: false };
+      }
+      const lower = req.toLowerCase();
+      const hasIntentKeyword = INTENT_KEYWORDS.some(k => lower.includes(k));
+
+      if (hasIntentKeyword) {
+        return { points: maxWeight, max: maxWeight, note: `High purchase intent keywords matched (+${maxWeight} pts)`, isPositive: true };
+      }
+
+      const pts = Math.round(maxWeight * 0.4);
+      return { points: pts, max: maxWeight, note: `Generic requirement without commercial keywords (+${pts} pts)`, isPositive: false };
+    }
+
+    function getCompanySizePoints(size, maxWeight) {
+      if (!size || size.trim() === "") {
+        return { points: 0, max: maxWeight, note: "Company size missing (0 pts)", isPositive: false };
+      }
+      if (size === "50-100" || size === "100-500") {
+        return { points: maxWeight, max: maxWeight, note: `Target mid-market size (${size} employees) (+${maxWeight} pts)`, isPositive: true };
+      }
+      if (size === "500+") {
+        const pts = Math.round(maxWeight * 0.8);
+        return { points: pts, max: maxWeight, note: `Enterprise size (${size} employees) (+${pts} pts)`, isPositive: true };
+      }
+      if (size === "10-50") {
+        const pts = Math.round(maxWeight * (10 / 15));
+        return { points: pts, max: maxWeight, note: `Small business size (${size} employees) (+${pts} pts)`, isPositive: true };
+      }
+      if (size === "1-10") {
+        const pts = Math.round(maxWeight * (5 / 15));
+        return { points: pts, max: maxWeight, note: `Micro team (${size} employees) (+${pts} pts)`, isPositive: false };
+      }
+      return { points: 0, max: maxWeight, note: "Unknown company size", isPositive: false };
+    }
+
+    function getIndustryPoints(industry, maxWeight) {
+      if (!industry || industry.trim() === "") {
+        return { points: 0, max: maxWeight, note: "Industry not specified (0 pts)", isPositive: false };
+      }
+      const topIndustries = ["IT Services", "SaaS", "Finance", "E-commerce"];
+      if (topIndustries.includes(industry)) {
+        return { points: maxWeight, max: maxWeight, note: `Priority target sector: ${industry} (+${maxWeight} pts)`, isPositive: true };
+      }
+      const pts = Math.round(maxWeight * (7 / 15));
+      return { points: pts, max: maxWeight, note: `Secondary industry: ${industry} (+${pts} pts)`, isPositive: false };
+    }
+
+    function getLeadSourcePoints(source, maxWeight) {
+      if (!source || source.trim() === "") {
+        return { points: 0, max: maxWeight, note: "Lead source missing (0 pts)", isPositive: false };
+      }
+      if (source === "Website" || source === "Referral") {
+        return { points: maxWeight, max: maxWeight, note: `High-intent inbound source: ${source} (+${maxWeight} pts)`, isPositive: true };
+      }
+      if (source === "LinkedIn" || source === "Event") {
+        const pts = Math.round(maxWeight * 0.7);
+        return { points: pts, max: maxWeight, note: `Warm channel source: ${source} (+${pts} pts)`, isPositive: true };
+      }
+      const pts = Math.round(maxWeight * 0.3);
+      return { points: pts, max: maxWeight, note: `Outbound cold channel: ${source} (+${pts} pts)`, isPositive: false };
+    }
+
+    function getContactPoints(email, phone, website, maxWeight) {
+      let earned = 0;
+      const notes = [];
+
+      // 1. Email check (40% of contact weight)
+      const emailMax = Math.round(maxWeight * 0.4);
+      if (!email || email.trim() === "") {
+        notes.push({ text: "Email address missing (0 pts)", isPositive: false });
+      } else {
+        const domain = email.split("@")[1]?.toLowerCase() || "";
+        const isGeneric = GENERIC_EMAIL_DOMAINS.some(d => domain.includes(d));
+        if (isGeneric) {
+          const genericPts = Math.round(maxWeight * 0.2);
+          earned += genericPts;
+          notes.push({ text: `Generic webmail (${domain}) used (-${emailMax - genericPts} pts penalty)`, isPositive: false });
+        } else {
+          earned += emailMax;
+          notes.push({ text: `Verified corporate email (${domain}) (+${emailMax} pts)`, isPositive: true });
+        }
+      }
+
+      // 2. Phone check (30% of contact weight)
+      const phoneMax = Math.round(maxWeight * 0.3);
+      const digitsOnly = (phone || "").replace(/\D/g, "");
+      if (digitsOnly.length >= 10 && digitsOnly.length <= 13) {
+        earned += phoneMax;
+        notes.push({ text: `Valid direct phone number provided (+${phoneMax} pts)`, isPositive: true });
+      } else {
+        notes.push({ text: "Valid phone number missing (0 pts)", isPositive: false });
+      }
+
+      // 3. Website check (30% of contact weight)
+      const siteMax = Math.round(maxWeight * 0.3);
+      if (website && website.trim().length > 3) {
+        earned += siteMax;
+        notes.push({ text: `Company website verified (+${siteMax} pts)`, isPositive: true });
+      } else {
+        notes.push({ text: "Company website missing (0 pts)", isPositive: false });
+      }
+
+      // Cap earned points to maxWeight
+      earned = Math.min(earned, maxWeight);
+      return { points: earned, max: maxWeight, notes: notes };
+    }
+
+    function getLocationPoints(location, maxWeight) {
+      if (!location || location.trim() === "") {
+        return { points: 0, max: maxWeight, note: "Location missing (0 pts)", isPositive: false };
+      }
+      const lower = location.toLowerCase();
+      const isTargetCity = TARGET_CITIES.some(city => lower.includes(city));
+
+      if (isTargetCity) {
+        return { points: maxWeight, max: maxWeight, note: `Tier-1 business hub: ${location} (+${maxWeight} pts)`, isPositive: true };
+      }
+      const pts = Math.round(maxWeight * 0.6);
+      return { points: pts, max: maxWeight, note: `Regional location: ${location} (+${pts} pts)`, isPositive: false };
+    }
+
+    // ==========================================
+    // 4. MAIN SCORE LEAD FUNCTION
+    // ==========================================
+    function scoreLead(lead, weights = currentWeights) {
+      const breakdown = {
+        jobTitle: getJobTitlePoints(lead.jobTitle, weights.jobTitle),
+        requirement: getRequirementPoints(lead.requirement, weights.requirement),
+        companySize: getCompanySizePoints(lead.companySize, weights.companySize),
+        industry: getIndustryPoints(lead.industry, weights.industry),
+        leadSource: getLeadSourcePoints(lead.leadSource, weights.leadSource),
+        contact: getContactPoints(lead.email, lead.phone, lead.website, weights.contact),
+        location: getLocationPoints(lead.location, weights.location)
+      };
+
+      // Sum points and max weights
+      let rawEarned = 0;
+      let totalMax = 0;
+      for (const key in weights) {
+        if (breakdown[key]) {
+          rawEarned += breakdown[key].points;
+          totalMax += breakdown[key].max;
+        }
+      }
+
+      // Calculate normalized score (0-100)
+      let score = 0;
+      if (totalMax > 0) {
+        if (totalMax === 100) {
+          score = rawEarned;
+        } else {
+          score = Math.round((rawEarned / totalMax) * 100);
+        }
+      }
+      score = Math.max(0, Math.min(100, score));
+
+      // Classification Tier
+      let classification = "Cold";
+      if (score >= 70) {
+        classification = "Hot";
+      } else if (score >= 40) {
+        classification = "Warm";
+      }
+
+      // Next Action
+      let action = "Nurture newsletter";
+      if (classification === "Hot") {
+        action = "Call within 24h & book demo";
+      } else if (classification === "Warm") {
+        action = "Personalised email & follow up in 3 days";
+      }
+
+      // Confidence Score (% fields filled out of 11)
+      const totalFields = 11;
+      let filledFields = 0;
+      if (lead.name?.trim()) filledFields++;
+      if (lead.company?.trim()) filledFields++;
+      if (lead.website?.trim()) filledFields++;
+      if (lead.jobTitle?.trim()) filledFields++;
+      if (lead.industry?.trim()) filledFields++;
+      if (lead.location?.trim()) filledFields++;
+      if (lead.companySize?.trim()) filledFields++;
+      if (lead.leadSource?.trim()) filledFields++;
+      if (lead.requirement?.trim()) filledFields++;
+      if (lead.email?.trim()) filledFields++;
+      if (lead.phone?.trim()) filledFields++;
+
+      const fillPct = Math.round((filledFields / totalFields) * 100);
+      let confidence = "Low";
+      if (fillPct > 90) {
+        confidence = "High";
+      } else if (fillPct >= 60) {
+        confidence = "Medium";
+      }
+
+      // Extract positive and negative drivers
+      const positives = [];
+      const negatives = [];
+
+      // Job Title
+      if (breakdown.jobTitle.isPositive) positives.push(breakdown.jobTitle.note);
+      else negatives.push(breakdown.jobTitle.note);
+
+      // Requirement
+      if (breakdown.requirement.isPositive) positives.push(breakdown.requirement.note);
+      else negatives.push(breakdown.requirement.note);
+
+      // Company Size
+      if (breakdown.companySize.isPositive) positives.push(breakdown.companySize.note);
+      else negatives.push(breakdown.companySize.note);
+
+      // Industry
+      if (breakdown.industry.isPositive) positives.push(breakdown.industry.note);
+      else negatives.push(breakdown.industry.note);
+
+      // Lead Source
+      if (breakdown.leadSource.isPositive) positives.push(breakdown.leadSource.note);
+      else negatives.push(breakdown.leadSource.note);
+
+      // Location
+      if (breakdown.location.isPositive) positives.push(breakdown.location.note);
+      else negatives.push(breakdown.location.note);
+
+      // Contact factors
+      breakdown.contact.notes.forEach(item => {
+        if (item.isPositive) positives.push(item.text);
+        else negatives.push(item.text);
+      });
+
+      // Generate Explanation
+      const explanation = generateExplanation(lead, score, classification, confidence, action, breakdown);
+
+      return {
+        score,
+        rawEarned,
+        totalMax,
+        breakdown,
+        positives,
+        negatives,
+        classification,
+        confidence,
+        fillPct,
+        action,
+        explanation
+      };
+    }
+
+    // ==========================================
+    // 5. EXPLANATION GENERATOR
+    // ==========================================
+    function generateExplanation(lead, score, classification, confidence, action, breakdown) {
+      const company = lead.company || "The prospect company";
+      const title = lead.jobTitle ? `as ${lead.jobTitle}` : "without a decision-maker title";
+      const ind = lead.industry ? `in ${lead.industry}` : "unspecified industry";
+
+      let driver = "";
+      if (score >= 70) {
+        driver = `strong commercial fit driven by executive involvement ${title} and high purchase intent`;
+      } else if (score >= 40) {
+        driver = `moderate pipeline fit with interest in ${ind}, though missing full C-level authority or urgent timeline`;
+      } else {
+        driver = `lower qualification fit due to missing contact coordinates, early-stage firmographics, or unverified requirement`;
+      }
+
+      return `${company} scored ${score}/100 (${classification}) with ${confidence} data completeness. This rating reflects ${driver}. Recommended sales action: ${action}.`;
+    }
+
+    // ==========================================
+    // 6. UI RENDERING & ANIMATIONS
+    // ==========================================
+    function showResults(lead, result) {
+      // Show container
+      document.getElementById("resultsEmpty").style.display = "none";
+      const activeEl = document.getElementById("resultsActive");
+      activeEl.style.display = "block";
+
+      // Lead Header
+      document.getElementById("resLeadTitle").textContent = lead.company || "Unnamed Company";
+      document.getElementById("resLeadContact").textContent = `${lead.name || "Lead"} • ${lead.jobTitle || "No Title"} • ${lead.location || "Location not given"}`;
+      
+      const confBadge = document.getElementById("resConfidenceBadge");
+      confBadge.textContent = `Confidence: ${result.confidence} (${result.fillPct}% filled)`;
+
+      // Animate Circular Gauge & Number
+      animateScoreGauge(result.score, result.classification);
+
+      // Tier Badge
+      const tierBadge = document.getElementById("resTierBadge");
+      tierBadge.className = `badge-tier tier-${result.classification.toLowerCase()}`;
+      tierBadge.textContent = `${result.classification} Lead`;
+
+      // Verdict Text
+      const verdictEl = document.getElementById("resVerdict");
+      if (result.classification === "Hot") {
+        verdictEl.textContent = "High-priority commercial opportunity with strong qualification fit.";
+      } else if (result.classification === "Warm") {
+        verdictEl.textContent = "Nurturable sales pipeline lead with moderate qualification fit.";
+      } else {
+        verdictEl.textContent = "Low ICP fit or missing critical contact information.";
+      }
+
+      document.getElementById("resConfidenceText").textContent = `${result.fillPct}% of contact and company data fields completed.`;
+
+      // Next Action
+      document.getElementById("resActionText").textContent = result.action;
+
+      // Positive Drivers
+      const posList = document.getElementById("resPositivesList");
+      posList.innerHTML = "";
+      if (result.positives.length === 0) {
+        posList.innerHTML = '<li class="factor-item" style="color: var(--text-muted);">None detected</li>';
+      } else {
+        result.positives.forEach(txt => {
+          const li = document.createElement("li");
+          li.className = "factor-item pos";
+          li.innerHTML = `<span>✓</span><span>${txt}</span>`;
+          posList.appendChild(li);
+        });
+      }
+
+      // Negative Deductions
+      const negList = document.getElementById("resNegativesList");
+      negList.innerHTML = "";
+      if (result.negatives.length === 0) {
+        negList.innerHTML = '<li class="factor-item" style="color: var(--text-muted);">None detected</li>';
+      } else {
+        result.negatives.forEach(txt => {
+          const li = document.createElement("li");
+          li.className = "factor-item neg";
+          li.innerHTML = `<span>⚠</span><span>${txt}</span>`;
+          negList.appendChild(li);
+        });
+      }
+
+      // Breakdown Table
+      renderBreakdownTable(result.breakdown);
+
+      // Explanation
+      document.getElementById("resExplanationText").textContent = result.explanation;
+    }
+
+    const displayResults = showResults;
+
+    function renderBreakdownTable(breakdown) {
+      const tbody = document.getElementById("resBreakdownBody");
+      tbody.innerHTML = "";
+
+      const rows = [
+        { name: "Job Title", item: breakdown.jobTitle },
+        { name: "Requirement Intent", item: breakdown.requirement },
+        { name: "Company Size", item: breakdown.companySize },
+        { name: "Industry Fit", item: breakdown.industry },
+        { name: "Lead Source", item: breakdown.leadSource },
+        { name: "Contact Completeness", item: breakdown.contact },
+        { name: "Location", item: breakdown.location }
+      ];
+
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        const pct = r.item.max > 0 ? Math.round((r.item.points / r.item.max) * 100) : 0;
+        tr.innerHTML = `
+          <td><strong>${r.name}</strong></td>
+          <td>${r.item.points} / ${r.item.max}</td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="progress-bar-bg" style="flex: 1;">
+                <div class="progress-bar-fill" style="width: ${pct}%;"></div>
+              </div>
+              <span style="font-size: 11px; color: var(--text-muted); width: 28px; text-align: right;">${pct}%</span>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function animateScoreGauge(targetScore, classification) {
+      const gaugeCircle = document.getElementById("gaugeCircle");
+      const scoreNum = document.getElementById("resScoreNum");
+      
+      const circumference = 339.29; // 2 * PI * 54
+      const targetOffset = circumference * (1 - targetScore / 100);
+
+      // Set color by tier
+      if (classification === "Hot") {
+        gaugeCircle.style.stroke = "var(--hot-color)";
+      } else if (classification === "Warm") {
+        gaugeCircle.style.stroke = "var(--warm-color)";
+      } else {
+        gaugeCircle.style.stroke = "var(--cold-color)";
+      }
+
+      // Smooth stroke offset
+      gaugeCircle.style.strokeDashoffset = targetOffset;
+
+      // Animate number counting up
+      let currentVal = 0;
+      const duration = 600; // ms
+      const startTime = performance.now();
+
+      function updateNumber(timestamp) {
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        currentVal = Math.round(progress * targetScore);
+        scoreNum.textContent = currentVal;
+
+        if (progress < 1) {
+          requestAnimationFrame(updateNumber);
+        } else {
+          scoreNum.textContent = targetScore;
+        }
+      }
+      requestAnimationFrame(updateNumber);
+    }
+
+    // ==========================================
+    // 7. WHAT-IF WEIGHT SIMULATOR
+    // ==========================================
+    function toggleSimulator() {
+      const content = document.getElementById("simPanelContent");
+      const arrow = document.getElementById("simToggleArrow");
+      if (content.style.display === "none") {
+        content.style.display = "block";
+        arrow.textContent = "▲";
+        updateSimulatorImpactTable();
+      } else {
+        content.style.display = "none";
+        arrow.textContent = "▼";
+      }
+    }
+
+    function handleWeightSliderChange(key, value) {
+      const intVal = parseInt(value, 10);
+      currentWeights[key] = intVal;
+      document.getElementById(`val-${key}`).textContent = intVal;
+
+      updateSimulatorStatus();
+      updateSimulatorImpactTable();
+      renderHistoryTable();
+
+      // If a lead is currently displayed, recalculate and refresh live
+      if (currentLeadData) {
+        currentLeadResult = scoreLead(currentLeadData, currentWeights);
+        showResults(currentLeadData, currentLeadResult);
+      }
+    }
+
+    function updateSimulatorStatus() {
+      let sum = 0;
+      for (const k in currentWeights) {
+        sum += currentWeights[k];
+      }
+      const sumEl = document.getElementById("simTotalWeights");
+      const noteEl = document.getElementById("simNormalNote");
+
+      sumEl.textContent = `Total Weights: ${sum} / 100`;
+      if (sum === 100) {
+        noteEl.textContent = "(Standard scale)";
+        noteEl.style.color = "var(--text-muted)";
+      } else {
+        noteEl.textContent = `(Normalised: score = earned / ${sum} × 100)`;
+        noteEl.style.color = "var(--warm-color)";
+      }
+    }
+
+    function resetWeightsToDefault() {
+      currentWeights = { ...DEFAULT_WEIGHTS };
+      for (const k in DEFAULT_WEIGHTS) {
+        const slider = document.getElementById(`slider-${k}`);
+        const valEl = document.getElementById(`val-${k}`);
+        if (slider) slider.value = DEFAULT_WEIGHTS[k];
+        if (valEl) valEl.textContent = DEFAULT_WEIGHTS[k];
+      }
+      updateSimulatorStatus();
+      updateSimulatorImpactTable();
+      renderHistoryTable();
+
+      if (currentLeadData) {
+        currentLeadResult = scoreLead(currentLeadData, currentWeights);
+        showResults(currentLeadData, currentLeadResult);
+      }
+    }
+
+    function updateSimulatorImpactTable() {
+      const tbody = document.getElementById("simBenchmarkBody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      BENCHMARK_LEADS.forEach(lead => {
+        const defaultRes = scoreLead(lead, DEFAULT_WEIGHTS);
+        const simRes = scoreLead(lead, currentWeights);
+
+        const tr = document.createElement("tr");
+
+        let changeTag = '<span style="color: var(--text-muted);">No change</span>';
+        if (defaultRes.classification !== simRes.classification) {
+          changeTag = `<span class="tag-change" style="background: var(--hot-bg); color: var(--hot-color); border: 1px solid #fecaca;">
+            ${defaultRes.classification} ➔ ${simRes.classification}
+          </span>`;
+        }
+
+        tr.innerHTML = `
+          <td><strong>${lead.name}</strong> (${lead.company})</td>
+          <td><span class="badge-tier tier-${defaultRes.classification.toLowerCase()}" style="font-size: 11px; padding: 2px 6px;">${defaultRes.score} (${defaultRes.classification})</span></td>
+          <td><span class="badge-tier tier-${simRes.classification.toLowerCase()}" style="font-size: 11px; padding: 2px 6px;">${simRes.score} (${simRes.classification})</span></td>
+          <td>${changeTag}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ==========================================
+    // 8. STORAGE & HISTORY
+    // ==========================================
+    const STORAGE_KEY = "lead_scorer_history_v1";
+
+    function getHistory() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        console.error("Failed to load history from localStorage", e);
+        return [];
+      }
+    }
+
+    function saveHistoryEntry(lead, result) {
+      const list = getHistory();
+      const entry = {
+        id: Date.now().toString(),
+        timestamp: new Date().toLocaleString(),
+        lead: lead,
+        score: result.score,
+        classification: result.classification,
+        action: result.action,
+        confidence: result.confidence
+      };
+
+      // Keep latest 50 entries
+      list.unshift(entry);
+      if (list.length > 50) list.pop();
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      } catch (e) {
+        console.error("Failed to save history to localStorage", e);
+      }
+
+      renderHistoryTable();
+    }
+
+    function renderHistoryTable() {
+      const list = getHistory();
+      const tbody = document.getElementById("historyTableBody");
+      
+      const total = list.length;
+      let hot = 0;
+      let warm = 0;
+      let cold = 0;
+      let sumScore = 0;
+
+      if (total === 0) {
+        document.getElementById("metricTotal").textContent = 0;
+        document.getElementById("metricHot").textContent = 0;
+        document.getElementById("metricWarm").textContent = 0;
+        document.getElementById("metricCold").textContent = 0;
+        document.getElementById("metricAvg").textContent = 0;
+
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+              No leads scored yet. Score a lead to build your audit log.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = "";
+      list.forEach(item => {
+        // Recalculate with current simulated weights
+        const simRes = scoreLead(item.lead, currentWeights);
+        const scoreDisplay = (simRes.score === item.score)
+          ? `<strong>${item.score}</strong> / 100`
+          : `<strong>${simRes.score}</strong> / 100 <span style="font-size: 10px; color: var(--text-muted);">(Orig: ${item.score})</span>`;
+
+        const tierToUse = simRes.classification;
+        if (tierToUse === "Hot") hot++;
+        else if (tierToUse === "Warm") warm++;
+        else cold++;
+        sumScore += simRes.score;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="font-size: 11px; color: var(--text-muted);">${item.timestamp}</td>
+          <td><strong>${item.lead.name || "Lead"}</strong><br><span style="font-size: 11px; color: var(--text-muted);">${item.lead.company}</span></td>
+          <td>${item.lead.jobTitle || "—"}</td>
+          <td>${scoreDisplay}</td>
+          <td><span class="badge-tier tier-${tierToUse.toLowerCase()}" style="font-size: 11px; padding: 2px 6px;">${tierToUse}</span></td>
+          <td style="font-size: 12px;">${simRes.action}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="reloadLeadFromHistory('${item.id}')" title="Reload lead into form">Load</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const avg = total > 0 ? Math.round(sumScore / total) : 0;
+      document.getElementById("metricTotal").textContent = total;
+      document.getElementById("metricHot").textContent = hot;
+      document.getElementById("metricWarm").textContent = warm;
+      document.getElementById("metricCold").textContent = cold;
+      document.getElementById("metricAvg").textContent = avg;
+    }
+
+    function reloadLeadFromHistory(id) {
+      const list = getHistory();
+      const match = list.find(x => x.id === id);
+      if (!match) return;
+
+      fillFormWithLead(match.lead);
+      switchTab("tab-scorer");
+      handleFormSubmit();
+    }
+
+    function clearLeadHistory() {
+      if (confirm("Are you sure you want to clear all lead scoring history?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        renderHistoryTable();
+      }
+    }
+
+    function exportHistoryToCsv() {
+      const list = getHistory();
+      if (list.length === 0) {
+        alert("No leads in history to export.");
+        return;
+      }
+
+      const headers = [
+        "Timestamp", "Name", "Company", "Website", "Job Title",
+        "Industry", "Location", "Company Size", "Lead Source",
+        "Email", "Phone", "Score", "Classification", "Confidence", "Next Action"
+      ];
+
+      const rows = list.map(item => {
+        const l = item.lead;
+        return [
+          item.timestamp,
+          l.name || "",
+          l.company || "",
+          l.website || "",
+          l.jobTitle || "",
+          l.industry || "",
+          l.location || "",
+          l.companySize || "",
+          l.leadSource || "",
+          l.email || "",
+          l.phone || "",
+          item.score,
+          item.classification,
+          item.confidence,
+          item.action
+        ].map(val => `"${String(val).replace(/"/g, '""')}"`);
+      });
+
+      const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `lead-scoring-history-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ==========================================
+    // 9. FORM CONTROLLERS & EVENT HANDLERS
+    // ==========================================
+    function getLeadDataFromForm() {
+      return {
+        name: document.getElementById("leadName").value.trim(),
+        company: document.getElementById("companyName").value.trim(),
+        website: document.getElementById("website").value.trim(),
+        jobTitle: document.getElementById("jobTitle").value.trim(),
+        industry: document.getElementById("industry").value,
+        location: document.getElementById("location").value.trim(),
+        companySize: document.getElementById("companySize").value,
+        leadSource: document.getElementById("leadSource").value,
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        requirement: document.getElementById("requirement").value.trim()
+      };
+    }
+
+    function fillFormWithLead(lead) {
+      document.getElementById("leadName").value = lead.name || "";
+      document.getElementById("companyName").value = lead.company || "";
+      document.getElementById("website").value = lead.website || "";
+      document.getElementById("jobTitle").value = lead.jobTitle || "";
+      document.getElementById("industry").value = lead.industry || "";
+      document.getElementById("location").value = lead.location || "";
+      document.getElementById("companySize").value = lead.companySize || "";
+      document.getElementById("leadSource").value = lead.leadSource || "";
+      document.getElementById("email").value = lead.email || "";
+      document.getElementById("phone").value = lead.phone || "";
+      document.getElementById("requirement").value = lead.requirement || "";
+
+      formSubmitted = true;
+      validateForm(true);
+    }
+
+    function loadSampleLead() {
+      const sample = BENCHMARK_LEADS[0]; // Rahul Sharma
+      fillFormWithLead(sample);
+      switchTab("tab-scorer");
+      handleFormSubmit();
+    }
+
+    function resetForm() {
+      document.getElementById("leadForm").reset();
+      formSubmitted = false;
+      validateForm(false);
+      document.getElementById("resultsActive").style.display = "none";
+      document.getElementById("resultsEmpty").style.display = "flex";
+      currentLeadData = null;
+      currentLeadResult = null;
+    }
+
+    function handleFormSubmit(e) {
+      if (e) e.preventDefault();
+      formSubmitted = true;
+      if (!validateForm(true)) return;
+
+      const submitBtn = document.getElementById("btnSubmitScore");
+      const originalText = submitBtn.innerHTML;
+
+      // Subtle loading state
+      submitBtn.innerHTML = "⏳ Scoring Lead...";
+      submitBtn.disabled = true;
+
+      setTimeout(() => {
+        const lead = getLeadDataFromForm();
+        const result = scoreLead(lead, currentWeights);
+
+        currentLeadData = lead;
+        currentLeadResult = result;
+
+        displayResults(lead, result);
+        saveHistoryEntry(lead, result);
+
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }, 250);
+    }
+
+    // ==========================================
+    // 10. AI REWRITE INTEGRATION (OPTIONAL)
+    // ==========================================
+    function saveApiKey() {
+      const key = document.getElementById("apiKeyInput").value.trim();
+      const provider = document.getElementById("aiProvider").value;
+      const statusEl = document.getElementById("apiKeyStatus");
+
+      if (key) {
+        localStorage.setItem("lead_scorer_api_key", key);
+        localStorage.setItem("lead_scorer_ai_provider", provider);
+        statusEl.innerHTML = '<span style="color: var(--success);">✓ API Key securely saved in your browser.</span>';
+      } else {
+        localStorage.removeItem("lead_scorer_api_key");
+        statusEl.innerHTML = '<span style="color: var(--text-muted);">API key cleared. System will use built-in template.</span>';
+      }
+    }
+
+    function clearApiKey() {
+      document.getElementById("apiKeyInput").value = "";
+      localStorage.removeItem("lead_scorer_api_key");
+      document.getElementById("apiKeyStatus").innerHTML = '<span style="color: var(--text-muted);">API key removed.</span>';
+    }
+
+    async function handleAiRefine() {
+      const apiKey = localStorage.getItem("lead_scorer_api_key");
+      if (!apiKey) {
+        const proceed = confirm("No API key configured. Would you like to enter your Google Gemini or OpenAI key in Settings?\n\n(Click Cancel to keep using the built-in deterministic explanation generator).");
+        if (proceed) {
+          switchTab("tab-settings");
+        }
+        return;
+      }
+
+      if (!currentLeadData || !currentLeadResult) return;
+
+      const provider = localStorage.getItem("lead_scorer_ai_provider") || "gemini";
+      const btn = document.getElementById("btnAiRefine");
+      btn.textContent = "⏳ Generating...";
+      btn.disabled = true;
+
+      const systemPrompt = `You are an executive sales intelligence assistant. 
+The lead '${currentLeadData.name}' at '${currentLeadData.company}' has ALREADY been scored deterministically by our rule engine at ${currentLeadResult.score}/100 (${currentLeadResult.classification} tier).
+DO NOT CHANGE OR RECALCULATE THE SCORE. 
+Write a concise, high-impact 2-3 sentence executive briefing for the sales team explaining why this lead received this score and what specific talking points they should prepare.`;
+
+      try {
+        let aiText = "";
+
+        if (provider === "gemini") {
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+          const resp = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: systemPrompt }] }]
+            })
+          });
+
+          if (!resp.ok) throw new Error(`Gemini API Error: ${resp.status}`);
+          const data = await resp.json();
+          aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        } else {
+          // OpenAI endpoint
+          const endpoint = "https://api.openai.com/v1/chat/completions";
+          const resp = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              messages: [
+                { role: "system", content: "You write concise B2B sales lead executive summaries." },
+                { role: "user", content: systemPrompt }
+              ],
+              max_tokens: 150
+            })
+          });
+
+          if (!resp.ok) throw new Error(`OpenAI API Error: ${resp.status}`);
+          const data = await resp.json();
+          aiText = data?.choices?.[0]?.message?.content;
+        }
+
+        if (aiText) {
+          document.getElementById("resExplanationText").innerHTML = `<strong>✨ AI Executive Briefing:</strong> ${aiText.trim()}`;
+        }
+      } catch (err) {
+        alert(`AI Generation Notice: ${err.message}. Keeping deterministic explanation.`);
+      } finally {
+        btn.textContent = "✨ Refine with AI";
+        btn.disabled = false;
+      }
+    }
+
+    // ==========================================
+    // 11. TAB CONTROLLER & INITIALIZATION
+    // ==========================================
+    function switchTab(tabId) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+
+      const targetTab = document.getElementById(tabId);
+      if (targetTab) targetTab.classList.add("active");
+
+      const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+      if (targetBtn) targetBtn.classList.add("active");
+
+      if (tabId === "tab-history") {
+        renderHistoryTable();
+      } else if (tabId === "tab-test-cases") {
+        renderBenchmarkCards();
+      }
+    }
+
+    function renderBenchmarkCards() {
+      const container = document.getElementById("testCasesContainer");
+      if (!container) return;
+      container.innerHTML = "";
+
+      BENCHMARK_LEADS.forEach(lead => {
+        const res = scoreLead(lead, DEFAULT_WEIGHTS);
+        const card = document.createElement("div");
+        card.className = "test-card";
+        card.innerHTML = `
+          <div>
+            <div class="test-card-header">
+              <div>
+                <div class="test-lead-name">${lead.name}</div>
+                <div class="test-lead-company">${lead.company} • ${lead.jobTitle || "No Title"}</div>
+              </div>
+              <span class="badge-tier tier-${res.classification.toLowerCase()}">${res.score} • ${res.classification}</span>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted); margin: 6px 0 10px;">${lead.label}</p>
+            <div class="test-attr-list">
+              <div><strong>Industry:</strong> ${lead.industry || "—"}</div>
+              <div><strong>Company Size:</strong> ${lead.companySize || "—"}</div>
+              <div><strong>Location:</strong> ${lead.location || "—"}</div>
+              <div><strong>Email:</strong> ${lead.email || "—"}</div>
+              <div><strong>Requirement:</strong> "${lead.requirement || "None"}"</div>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 12px;" onclick="loadAndScoreBenchmark('${lead.id}')">
+            Load & Score Lead ➔
+          </button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function loadAndScoreBenchmark(id) {
+      const lead = BENCHMARK_LEADS.find(x => x.id === id);
+      if (!lead) return;
+      fillFormWithLead(lead);
+      switchTab("tab-scorer");
+      handleFormSubmit();
+    }
+
+    // App Startup
+    window.addEventListener("DOMContentLoaded", () => {
+      validateForm(false);
+      renderHistoryTable();
+      renderBenchmarkCards();
+      updateSimulatorStatus();
+      updateSimulatorImpactTable();
+
+      // Load saved API key into settings field if exists
+      const savedKey = localStorage.getItem("lead_scorer_api_key");
+      const savedProvider = localStorage.getItem("lead_scorer_ai_provider");
+      if (savedKey) {
+        document.getElementById("apiKeyInput").value = savedKey;
+        document.getElementById("apiKeyStatus").innerHTML = '<span style="color: var(--success);">✓ API Key active from localStorage</span>';
+      }
+      if (savedProvider) {
+        document.getElementById("aiProvider").value = savedProvider;
+      }
+    });
+  </script>
+</body>
+</html>
