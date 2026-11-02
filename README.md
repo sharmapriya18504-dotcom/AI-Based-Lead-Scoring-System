@@ -162,23 +162,35 @@ vercel --prod
 
 ---
 
-## 11. Code Structure
+## 11. Code & Navigation Structure
 
 All code is cleanly structured into single-responsibility sections in `index.html`:
 
 ```
 index.html
 ├── <head>
-│   └── <style>              # Clean SaaS CSS: 8/16/24px spacing, CSS grid, SVG gauge, micro-interactions
+│   └── <style>              # Modern SaaS CSS: Desktop sidebar layout, responsive mobile grid, SVG gauge
 ├── <body>
-│   ├── <header>             # Brand name, subtitle, and tab navigation
-│   ├── #tab-scorer          # Two-column layout: Form Card + Dynamic Results Card
-│   ├── #simPanelContent     # What-If Weight Simulator sliders & benchmark comparison table
-│   ├── #tab-methodology     # Criteria breakdown table and tier definitions
-│   ├── #tab-test-cases      # One-click benchmark test lead cards
-│   ├── #tab-history         # LocalStorage audit log, metric strip, and CSV export
-│   ├── #tab-settings        # Optional Gemini/OpenAI API key configuration
-│   └── <footer>             # Author attribution: Priya Sharma
+│   ├── <aside class="sidebar">  # Left Navigation Sidebar:
+│   │   ├── Brand Logo & Leadonspot Badge
+│   │   ├── 🏠 Introduction (Default landing page)
+│   │   ├── 🎯 Lead Scorer Studio (Interactive Form + Circular Gauge)
+│   │   ├── ⚖️ Scoring Methodology (Transparent 100-pt matrix)
+│   │   ├── 🧪 Benchmark Tests (5 one-click validation cases)
+│   │   ├── 📜 Audit History & CSV Export
+│   │   ├── ⚙️ AI Settings (Optional Gemini / OpenAI key)
+│   │   ├── 👩‍💻 About the Author (Priya Sharma Profile)
+│   │   └── Candidate Footer Pill
+│   │
+│   └── <main class="main-wrapper">
+│       ├── #tab-intro       # Overview, problem vs solution, architecture workflow
+│       ├── #tab-scorer      # Two-column Lead Scorer + What-If Simulator
+│       ├── #tab-methodology # Complete criteria breakdown table
+│       ├── #tab-test-cases  # Benchmark archetypes with one-click scoring
+│       ├── #tab-history     # LocalStorage audit log + metric strip + CSV download
+│       ├── #tab-settings    # Client-side API key configuration
+│       └── #tab-author      # Priya Sharma Candidate Statement & technical skills
+│
 └── <script>
     ├── 1. Weights           # SCORING_WEIGHTS & DEFAULT_WEIGHTS
     ├── 2. Validation        # isValidEmail, isValidPhone, isValidWebsite, validateForm
@@ -188,7 +200,7 @@ index.html
     ├── 6. UI Controllers    # showResults, animateScoreGauge, renderBreakdownTable
     ├── 7. What-If Simulator # handleWeightSliderChange, resetWeightsToDefault
     ├── 8. LocalStorage      # saveHistoryEntry, renderHistoryTable, exportHistoryToCsv
-    └── 9. Event Listeners   # DOMContentLoaded & Tab routing
+    └── 9. Tab Routing       # switchTab, DOMContentLoaded lifecycle
 ```
 
 ---

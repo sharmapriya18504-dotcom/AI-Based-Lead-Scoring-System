@@ -15,19 +15,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Lead Scorer - Explainable B2B Sales Lead Scoring</title>
+  <title>Lead Scorer - AI/ML Lead Scoring System | Priya Sharma</title>
   <style>
-    /* CSS Variables & Global Resets */
+    /* CSS Variables & Theme */
     :root {
       --primary: #4f46e5;
       --primary-hover: #4338ca;
       --primary-light: #eef2ff;
+      --primary-subtle: #f5f7ff;
       --hot-color: #dc2626;
       --hot-bg: #fef2f2;
+      --hot-border: #fecaca;
       --warm-color: #d97706;
       --warm-bg: #fffbeb;
+      --warm-border: #fed7aa;
       --cold-color: #2563eb;
       --cold-bg: #eff6ff;
+      --cold-border: #bfdbfe;
       --success: #16a34a;
       --success-bg: #f0fdf4;
       --text-main: #0f172a;
@@ -35,9 +39,11 @@
       --border: #e2e8f0;
       --bg-page: #f8fafc;
       --bg-card: #ffffff;
+      --sidebar-width: 260px;
       --radius: 12px;
-      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --radius-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
@@ -53,88 +59,234 @@
       background-color: var(--bg-page);
       color: var(--text-main);
       line-height: 1.5;
-      padding: 0 16px 40px;
-    }
-
-    /* Container */
-    .app-container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    /* Header */
-    header {
-      padding: 24px 0 16px;
+      min-height: 100vh;
       display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
     }
 
-    .brand-group {
+    /* Layout: Sidebar + Main Content */
+    .app-layout {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: #ffffff;
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--primary);
+      color: #ffffff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+    }
+
+    .brand-text-group {
+      display: flex;
+      flex-direction: column;
     }
 
     .brand-title {
-      font-size: 24px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      line-height: 1.2;
     }
 
-    .badge-tag {
-      font-size: 11px;
+    .brand-badge {
+      font-size: 10px;
       font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: var(--primary-light);
       color: var(--primary);
+      background: var(--primary-light);
+      padding: 1px 6px;
+      border-radius: 4px;
+      width: fit-content;
+      margin-top: 2px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
-    .brand-tagline {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    /* Navigation Tabs */
-    .nav-tabs {
+    /* Sidebar Navigation Menu */
+    .sidebar-menu {
+      padding: 16px 12px;
       display: flex;
-      gap: 8px;
-      background: #e2e8f0;
-      padding: 4px;
-      border-radius: 10px;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      overflow-y: auto;
     }
 
-    .tab-btn {
-      padding: 8px 16px;
+    .menu-heading {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 12px 12px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
       font-size: 13px;
       font-weight: 600;
-      border: none;
+      color: #475569;
       background: transparent;
-      color: var(--text-muted);
-      border-radius: 6px;
+      border: none;
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      transition: all 0.2s ease;
+      width: 100%;
+      text-align: left;
       font-family: inherit;
+      transition: all 0.15s ease;
     }
 
-    .tab-btn:hover {
+    .nav-item:hover {
+      background: #f1f5f9;
       color: var(--text-main);
     }
 
-    .tab-btn.active {
-      background: var(--bg-card);
+    .nav-item.active {
+      background: var(--primary-light);
       color: var(--primary);
-      box-shadow: var(--shadow-sm);
+      font-weight: 700;
+    }
+
+    .nav-item-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+
+    /* Sidebar Footer / Author Pill */
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      background: #fafafa;
+    }
+
+    .author-card-mini {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s ease;
+    }
+
+    .author-card-mini:hover {
+      background: #f1f5f9;
+    }
+
+    .author-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #e0e7ff;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .author-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .author-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .author-role {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Main Content Wrapper */
+    .main-wrapper {
+      flex: 1;
+      padding: 32px 36px 60px;
+      overflow-y: auto;
+      max-width: 1200px;
+    }
+
+    /* Top Bar Mobile Toggle */
+    .mobile-header {
+      display: none;
+      padding: 12px 16px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    @media (max-width: 900px) {
+      .app-layout {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .sidebar-menu {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 8px;
+      }
+      .menu-heading, .sidebar-footer {
+        display: none;
+      }
+      .nav-item {
+        white-space: nowrap;
+        padding: 8px 12px;
+      }
+      .main-wrapper {
+        padding: 20px 16px 40px;
+      }
     }
 
     /* Cards */
@@ -145,7 +297,7 @@
       box-shadow: var(--shadow-sm);
       padding: 24px;
       margin-bottom: 24px;
-      transition: box-shadow 0.2s ease, transform 0.2s ease;
+      transition: box-shadow 0.2s ease;
     }
 
     .card:hover {
@@ -167,8 +319,91 @@
       color: var(--text-main);
     }
 
-    /* Scorer Grid Layout */
-    .scorer-grid {
+    .card-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Section Hero Banners */
+    .hero-banner {
+      background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+      color: #ffffff;
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(4px);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .hero-title {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+
+    .hero-desc {
+      font-size: 14px;
+      color: #e0e7ff;
+      max-width: 680px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-hero-primary {
+      background: #ffffff;
+      color: var(--primary);
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-hero-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-hero-secondary {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s ease;
+    }
+
+    .btn-hero-secondary:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Grid Layouts */
+    .grid-2col {
       display: grid;
       grid-template-columns: 1.15fr 1fr;
       gap: 24px;
@@ -176,9 +411,64 @@
     }
 
     @media (max-width: 960px) {
-      .scorer-grid {
+      .grid-2col {
         grid-template-columns: 1fr;
       }
+    }
+
+    .grid-3col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .grid-4col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    /* Feature & Stat Cards */
+    .feature-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .feature-card:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .feature-icon-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 14px;
+    }
+
+    .feature-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .feature-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
     }
 
     /* Form Styles */
@@ -220,7 +510,7 @@
       font-size: 14px;
       font-family: inherit;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       background: #ffffff;
       color: var(--text-main);
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -259,7 +549,7 @@
       padding: 10px 18px;
       font-size: 13px;
       font-weight: 600;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       cursor: pointer;
       font-family: inherit;
       border: 1px solid transparent;
@@ -338,7 +628,7 @@
       margin-bottom: 20px;
     }
 
-    /* Results Card */
+    /* Results Active Animation */
     .results-active {
       display: none;
       animation: fadeIn 0.3s ease forwards;
@@ -441,19 +731,19 @@
     .tier-hot {
       background: var(--hot-bg);
       color: var(--hot-color);
-      border: 1px solid #fecaca;
+      border: 1px solid var(--hot-border);
     }
 
     .tier-warm {
       background: var(--warm-bg);
       color: var(--warm-color);
-      border: 1px solid #fed7aa;
+      border: 1px solid var(--warm-border);
     }
 
     .tier-cold {
       background: var(--cold-bg);
       color: var(--cold-color);
-      border: 1px solid #bfdbfe;
+      border: 1px solid var(--cold-border);
     }
 
     .lead-verdict {
@@ -472,7 +762,7 @@
       background: #f1f5f9;
       border-left: 4px solid var(--primary);
       padding: 12px 16px;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       margin-bottom: 20px;
     }
 
@@ -508,7 +798,7 @@
     .factor-col {
       background: #f8fafc;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 12px;
     }
 
@@ -586,7 +876,7 @@
     .explanation-box {
       background: #f8fafc;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 14px;
       font-size: 13px;
       color: #334155;
@@ -610,7 +900,7 @@
     /* What-If Simulator Section */
     .simulator-card {
       margin-top: 24px;
-      border-top: 2px solid var(--primary);
+      border-top: 3px solid var(--primary);
     }
 
     .simulator-toggle-btn {
@@ -627,7 +917,7 @@
 
     .slider-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 16px;
       margin: 16px 0;
     }
@@ -636,7 +926,7 @@
       background: #f8fafc;
       border: 1px solid var(--border);
       padding: 12px;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
     }
 
     .slider-header {
@@ -666,7 +956,7 @@
       gap: 12px;
       background: #f1f5f9;
       padding: 10px 14px;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       margin-bottom: 16px;
       font-size: 13px;
     }
@@ -692,10 +982,10 @@
       font-size: 11px;
     }
 
-    /* History & Summary Strip */
+    /* History & Metric Summary Strip */
     .summary-strip {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 12px;
       margin-bottom: 20px;
     }
@@ -703,7 +993,7 @@
     .metric-card {
       background: #f8fafc;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 12px 14px;
       text-align: center;
     }
@@ -744,7 +1034,7 @@
     /* Test Cases Cards */
     .test-cases-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
       gap: 16px;
     }
 
@@ -757,6 +1047,12 @@
       flex-direction: column;
       justify-content: space-between;
       gap: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .test-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
     }
 
     .test-card-header {
@@ -783,625 +1079,870 @@
       gap: 4px;
     }
 
-    /* Footer */
-    footer {
-      text-align: center;
-      padding: 32px 0 16px;
-      font-size: 13px;
-      color: var(--text-muted);
-      border-top: 1px solid var(--border);
-      margin-top: 40px;
+    /* Author & Candidate Profile Tab Styles */
+    .author-hero {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
     }
 
-    /* Modal / Popup for Settings */
+    .author-avatar-large {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 800;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .author-bio-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .author-bio-subtitle {
+      font-size: 14px;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .author-bio-text {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    .badge-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--primary-light);
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Tab Controller System */
     .tab-content {
       display: none;
     }
 
     .tab-content.active {
       display: block;
+      animation: fadeIn 0.25s ease forwards;
     }
   </style>
 </head>
 <body>
 
-  <div class="app-container">
+  <div class="app-layout">
     
-    <!-- Top Header -->
-    <header>
-      <div class="brand-group">
-        <div class="brand-title">
-          <span>Lead Scorer</span>
-          <span class="badge-tag">AI/ML Intern Project</span>
+    <!-- Left Navigation Sidebar -->
+    <aside class="sidebar">
+      
+      <div>
+        <div class="sidebar-header">
+          <div class="brand-logo">
+            <div class="logo-icon">⚡</div>
+            <div class="brand-text-group">
+              <span class="brand-title">Lead Scorer</span>
+              <span class="brand-badge">Leadonspot AI/ML</span>
+            </div>
+          </div>
         </div>
-        <p class="brand-tagline">100% Deterministic, Explainable Lead Scoring for B2B Sales Teams</p>
+
+        <nav class="sidebar-menu">
+          <div class="menu-heading">Main Navigation</div>
+          
+          <button type="button" class="nav-item active" data-tab="tab-intro" onclick="switchTab('tab-intro')">
+            <span class="nav-item-icon">🏠</span>
+            <span>Introduction</span>
+          </button>
+
+          <button type="button" class="nav-item" data-tab="tab-scorer" onclick="switchTab('tab-scorer')">
+            <span class="nav-item-icon">🎯</span>
+            <span>Lead Scorer Studio</span>
+          </button>
+
+          <button type="button" class="nav-item" data-tab="tab-methodology" onclick="switchTab('tab-methodology')">
+            <span class="nav-item-icon">⚖️</span>
+            <span>Methodology & Rules</span>
+          </button>
+
+          <button type="button" class="nav-item" data-tab="tab-test-cases" onclick="switchTab('tab-test-cases')">
+            <span class="nav-item-icon">🧪</span>
+            <span>Benchmark Tests</span>
+          </button>
+
+          <button type="button" class="nav-item" data-tab="tab-history" onclick="switchTab('tab-history')">
+            <span class="nav-item-icon">📜</span>
+            <span>Audit History & CSV</span>
+          </button>
+
+          <div class="menu-heading">Settings & Author</div>
+
+          <button type="button" class="nav-item" data-tab="tab-settings" onclick="switchTab('tab-settings')">
+            <span class="nav-item-icon">⚙️</span>
+            <span>AI Settings (LLM)</span>
+          </button>
+
+          <button type="button" class="nav-item" data-tab="tab-author" onclick="switchTab('tab-author')">
+            <span class="nav-item-icon">👩‍💻</span>
+            <span>About Priya Sharma</span>
+          </button>
+        </nav>
       </div>
 
-      <nav class="nav-tabs">
-        <button class="tab-btn active" data-tab="tab-scorer" onclick="switchTab('tab-scorer')">🎯 Scorer</button>
-        <button class="tab-btn" data-tab="tab-methodology" onclick="switchTab('tab-methodology')">⚖️ Methodology</button>
-        <button class="tab-btn" data-tab="tab-test-cases" onclick="switchTab('tab-test-cases')">🧪 Test Cases</button>
-        <button class="tab-btn" data-tab="tab-history" onclick="switchTab('tab-history')">📜 History</button>
-        <button class="tab-btn" data-tab="tab-settings" onclick="switchTab('tab-settings')">⚙️ AI Settings</button>
-      </nav>
-    </header>
+      <!-- Sidebar Bottom Candidate Profile -->
+      <div class="sidebar-footer">
+        <div class="author-card-mini" onclick="switchTab('tab-author')">
+          <div class="author-avatar">PS</div>
+          <div class="author-info">
+            <span class="author-name">Priya Sharma</span>
+            <span class="author-role">AI/ML Intern (Round 2)</span>
+          </div>
+        </div>
+      </div>
 
-    <!-- TAB 1: MAIN SCORER -->
-    <div id="tab-scorer" class="tab-content active">
-      <div class="scorer-grid">
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      
+      <!-- TAB 1: INTRODUCTION & OVERVIEW (First Page) -->
+      <section id="tab-intro" class="tab-content active">
         
-        <!-- Left: Form Card -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Lead Information</h2>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="loadSampleLead()">
-              📋 Load Sample Lead
+        <div class="hero-banner">
+          <span class="hero-tag">Internship Evaluation Project • Round 2</span>
+          <h1 class="hero-title">Explainable AI Lead Scoring System</h1>
+          <p class="hero-desc">
+            A 100% deterministic, explainable B2B sales intelligence engine designed to instantly qualify, rank, and route inbound leads without black-box hallucinations.
+          </p>
+          <div class="hero-actions">
+            <button type="button" class="btn-hero-primary" onclick="switchTab('tab-scorer')">
+              🚀 Open Lead Scorer Studio
+            </button>
+            <button type="button" class="btn-hero-secondary" onclick="switchTab('tab-test-cases')">
+              🧪 Run 5 Benchmark Tests
             </button>
           </div>
-
-          <form id="leadForm" novalidate onsubmit="handleFormSubmit(event)">
-            
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="leadName">Contact Name <span class="required">*</span></label>
-                <input type="text" id="leadName" class="input-field" placeholder="e.g. Rahul Sharma" oninput="validateForm()">
-                <span class="error-text" id="err-leadName"></span>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="companyName">Company Name <span class="required">*</span></label>
-                <input type="text" id="companyName" class="input-field" placeholder="e.g. ABC Technologies" oninput="validateForm()">
-                <span class="error-text" id="err-companyName"></span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="website">Company Website</label>
-                <input type="text" id="website" class="input-field" placeholder="e.g. www.abctechnologies.com" oninput="validateForm()">
-                <span class="error-text" id="err-website"></span>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="jobTitle">Job Title</label>
-                <input type="text" id="jobTitle" class="input-field" placeholder="e.g. Founder, CEO, Manager" oninput="validateForm()">
-                <span class="error-text" id="err-jobTitle"></span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="industry">Industry</label>
-                <select id="industry" class="select-field" onchange="validateForm()">
-                  <option value="">Select Industry...</option>
-                  <option value="IT Services">IT Services</option>
-                  <option value="SaaS">SaaS</option>
-                  <option value="Finance">Finance</option>
-                  <option value="E-commerce">E-commerce</option>
-                  <option value="Healthcare">Healthcare</option>
-                  <option value="Manufacturing">Manufacturing</option>
-                  <option value="Retail">Retail</option>
-                  <option value="Education">Education</option>
-                  <option value="Other">Other</option>
-                </select>
-                <span class="error-text" id="err-industry"></span>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="location">Company Location</label>
-                <input type="text" id="location" class="input-field" placeholder="e.g. Bangalore, Mumbai, Pune" oninput="validateForm()">
-                <span class="error-text" id="err-location"></span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="companySize">Company Size</label>
-                <select id="companySize" class="select-field" onchange="validateForm()">
-                  <option value="">Select Size...</option>
-                  <option value="1-10">1-10 employees</option>
-                  <option value="10-50">10-50 employees</option>
-                  <option value="50-100">50-100 employees</option>
-                  <option value="100-500">100-500 employees</option>
-                  <option value="500+">500+ employees</option>
-                </select>
-                <span class="error-text" id="err-companySize"></span>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="leadSource">Lead Source</label>
-                <select id="leadSource" class="select-field" onchange="validateForm()">
-                  <option value="">Select Source...</option>
-                  <option value="Website">Website</option>
-                  <option value="Referral">Referral</option>
-                  <option value="LinkedIn">LinkedIn</option>
-                  <option value="Event">Event</option>
-                  <option value="Cold List">Cold List</option>
-                  <option value="Other">Other</option>
-                </select>
-                <span class="error-text" id="err-leadSource"></span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="email">Work Email</label>
-                <input type="email" id="email" class="input-field" placeholder="e.g. rahul@example.com" oninput="validateForm()">
-                <span class="error-text" id="err-email"></span>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="phone">Phone Number</label>
-                <input type="tel" id="phone" class="input-field" placeholder="e.g. +91 9876543210" oninput="validateForm()">
-                <span class="error-text" id="err-phone"></span>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="requirement">Requirement / Project Needs</label>
-              <textarea id="requirement" class="textarea-field" placeholder="e.g. Looking for CRM software and automation solution for sales team" oninput="validateForm()"></textarea>
-              <span class="error-text" id="err-requirement"></span>
-            </div>
-
-            <div class="form-actions">
-              <button type="submit" id="btnSubmitScore" class="btn btn-primary" style="flex: 1;" disabled>
-                🚀 Score Lead
-              </button>
-              <button type="button" class="btn btn-secondary" onclick="resetForm()">
-                Reset
-              </button>
-            </div>
-
-          </form>
         </div>
 
-        <!-- Right: Results Card -->
-        <div class="card" id="resultsContainer">
-          
-          <!-- Empty State -->
-          <div id="resultsEmpty" class="empty-state">
-            <div class="empty-icon">📊</div>
-            <div class="empty-title">No Lead Scored Yet</div>
-            <p class="empty-desc">
-              Fill in the lead details on the left, or click <strong>Load Sample Lead</strong> to see the explainable scoring engine in action.
+        <!-- 3 Problem vs Solution Cards -->
+        <div class="grid-3col">
+          <div class="feature-card">
+            <div class="feature-icon-badge">❌</div>
+            <h3 class="feature-title">The Black-Box Problem</h3>
+            <p class="feature-desc">
+              Pure probabilistic ML models output unexplained probabilities. Sales reps cannot tell why a lead was rejected or what talking points to prepare.
             </p>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="loadSampleLead()">
-              Load Rahul Sharma Sample Lead
-            </button>
           </div>
 
-          <!-- Active Results (Shown after scoring) -->
-          <div id="resultsActive" class="results-active">
-            
-            <div class="card-header" style="margin-bottom: 16px;">
-              <div>
-                <h3 class="card-title" id="resLeadTitle">ABC Technologies</h3>
-                <span style="font-size: 13px; color: var(--text-muted);" id="resLeadContact">Rahul Sharma</span>
-              </div>
-              <span id="resConfidenceBadge" class="badge-tag">Confidence: High</span>
+          <div class="feature-card">
+            <div class="feature-icon-badge">⚖️</div>
+            <h3 class="feature-title">100% Deterministic Engine</h3>
+            <p class="feature-desc">
+              Scores (0–100) are generated through an explicit weighted rule framework. Identical inputs will ALWAYS produce identical scores with zero variance.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-badge">✨</div>
+            <h3 class="feature-title">Controlled AI Briefing</h3>
+            <p class="feature-desc">
+              LLMs are decoupled from scoring and used strictly to synthesize natural-language executive briefings without altering score math.
+            </p>
+          </div>
+        </div>
+
+        <!-- 4 Steps Architecture Workflow -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">How the Scoring Pipeline Works</h2>
+              <p class="card-subtitle">End-to-end deterministic evaluation pipeline</p>
+            </div>
+            <span class="badge-tag">Zero Server Latency</span>
+          </div>
+
+          <div class="grid-4col" style="margin-bottom: 0;">
+            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-sm);">
+              <div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Step 01</div>
+              <h4 style="font-size: 14px; font-weight: 700; margin: 4px 0 6px;">Lead Data Ingestion</h4>
+              <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">Validates 11 key firmographic, persona, and contact attributes with defensive defaults.</p>
             </div>
 
-            <!-- Score Summary & Circular Gauge -->
-            <div class="score-summary-row">
-              <div class="gauge-wrapper">
-                <svg class="gauge-svg" viewBox="0 0 120 120">
-                  <circle class="gauge-bg" cx="60" cy="60" r="54"></circle>
-                  <circle id="gaugeCircle" class="gauge-val" cx="60" cy="60" r="54"></circle>
-                </svg>
-                <div class="gauge-center">
-                  <div class="gauge-number" id="resScoreNum">0</div>
-                  <div class="gauge-label">/ 100</div>
+            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-sm);">
+              <div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Step 02</div>
+              <h4 style="font-size: 14px; font-weight: 700; margin: 4px 0 6px;">7-Pillar Rule Audit</h4>
+              <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">Evaluates Job Title (20), Requirement Intent (20), Size (15), Industry (15), Source (10), Contact (10), Location (10).</p>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-sm);">
+              <div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Step 03</div>
+              <h4 style="font-size: 14px; font-weight: 700; margin: 4px 0 6px;">Tier & SLA Assignment</h4>
+              <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">Classifies lead into Hot (≥70), Warm (40–69), or Cold (&lt;40) with dedicated sales rep action playbooks.</p>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-sm);">
+              <div style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Step 04</div>
+              <h4 style="font-size: 14px; font-weight: 700; margin: 4px 0 6px;">Audit Log & What-If</h4>
+              <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">Persists lead in local audit history, enables CSV export, and allows live sensitivity tuning in simulator.</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TAB 2: LEAD SCORER STUDIO -->
+      <section id="tab-scorer" class="tab-content">
+        
+        <div class="grid-2col">
+          
+          <!-- Left: Form Card -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Lead Information</h2>
+                <p class="card-subtitle">Enter prospect coordinates to generate score</p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="loadSampleLead()">
+                📋 Load Sample Lead
+              </button>
+            </div>
+
+            <form id="leadForm" novalidate onsubmit="handleFormSubmit(event)">
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="leadName">Contact Name <span class="required">*</span></label>
+                  <input type="text" id="leadName" class="input-field" placeholder="e.g. Rahul Sharma" oninput="validateForm()">
+                  <span class="error-text" id="err-leadName"></span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="companyName">Company Name <span class="required">*</span></label>
+                  <input type="text" id="companyName" class="input-field" placeholder="e.g. ABC Technologies" oninput="validateForm()">
+                  <span class="error-text" id="err-companyName"></span>
                 </div>
               </div>
 
-              <div class="score-meta">
-                <div id="resTierBadge" class="badge-tier tier-hot">Hot Lead</div>
-                <div id="resVerdict" class="lead-verdict">Strong purchase intent with executive authority.</div>
-                <div id="resConfidenceText" class="confidence-tag">100% of data points available.</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="website">Company Website</label>
+                  <input type="text" id="website" class="input-field" placeholder="e.g. www.abctechnologies.com" oninput="validateForm()">
+                  <span class="error-text" id="err-website"></span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="jobTitle">Job Title</label>
+                  <input type="text" id="jobTitle" class="input-field" placeholder="e.g. Founder, CEO, Manager" oninput="validateForm()">
+                  <span class="error-text" id="err-jobTitle"></span>
+                </div>
               </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="industry">Industry</label>
+                  <select id="industry" class="select-field" onchange="validateForm()">
+                    <option value="">Select Industry...</option>
+                    <option value="IT Services">IT Services</option>
+                    <option value="SaaS">SaaS</option>
+                    <option value="Finance">Finance</option>
+                    <option value="E-commerce">E-commerce</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Manufacturing">Manufacturing</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Education">Education</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <span class="error-text" id="err-industry"></span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="location">Company Location</label>
+                  <input type="text" id="location" class="input-field" placeholder="e.g. Bangalore, Mumbai, Pune" oninput="validateForm()">
+                  <span class="error-text" id="err-location"></span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="companySize">Company Size</label>
+                  <select id="companySize" class="select-field" onchange="validateForm()">
+                    <option value="">Select Size...</option>
+                    <option value="1-10">1-10 employees</option>
+                    <option value="10-50">10-50 employees</option>
+                    <option value="50-100">50-100 employees</option>
+                    <option value="100-500">100-500 employees</option>
+                    <option value="500+">500+ employees</option>
+                  </select>
+                  <span class="error-text" id="err-companySize"></span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="leadSource">Lead Source</label>
+                  <select id="leadSource" class="select-field" onchange="validateForm()">
+                    <option value="">Select Source...</option>
+                    <option value="Website">Website</option>
+                    <option value="Referral">Referral</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Event">Event</option>
+                    <option value="Cold List">Cold List</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <span class="error-text" id="err-leadSource"></span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="email">Work Email</label>
+                  <input type="email" id="email" class="input-field" placeholder="e.g. rahul@example.com" oninput="validateForm()">
+                  <span class="error-text" id="err-email"></span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="phone">Phone Number</label>
+                  <input type="tel" id="phone" class="input-field" placeholder="e.g. +91 9876543210" oninput="validateForm()">
+                  <span class="error-text" id="err-phone"></span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="requirement">Requirement / Project Needs</label>
+                <textarea id="requirement" class="textarea-field" placeholder="e.g. Looking for CRM software and automation solution for sales team" oninput="validateForm()"></textarea>
+                <span class="error-text" id="err-requirement"></span>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" id="btnSubmitScore" class="btn btn-primary" style="flex: 1;" disabled>
+                  🚀 Score Lead
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                  Reset
+                </button>
+              </div>
+
+            </form>
+          </div>
+
+          <!-- Right: Results Card -->
+          <div class="card" id="resultsContainer">
+            
+            <!-- Empty State -->
+            <div id="resultsEmpty" class="empty-state">
+              <div class="empty-icon">📊</div>
+              <div class="empty-title">No Lead Scored Yet</div>
+              <p class="empty-desc">
+                Fill in the lead details on the left, or click <strong>Load Sample Lead</strong> to see the explainable scoring engine in action.
+              </p>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="loadSampleLead()">
+                Load Rahul Sharma Sample Lead
+              </button>
             </div>
 
-            <!-- Next Action Recommended -->
-            <div class="next-action-card">
-              <div class="action-header">Recommended Next Action</div>
-              <div class="action-text" id="resActionText">Call within 24 hours & schedule product demo</div>
+            <!-- Active Results (Shown after scoring) -->
+            <div id="resultsActive" class="results-active">
+              
+              <div class="card-header" style="margin-bottom: 16px;">
+                <div>
+                  <h3 class="card-title" id="resLeadTitle">ABC Technologies</h3>
+                  <span style="font-size: 13px; color: var(--text-muted);" id="resLeadContact">Rahul Sharma</span>
+                </div>
+                <span id="resConfidenceBadge" class="badge-tag">Confidence: High</span>
+              </div>
+
+              <!-- Score Summary & Circular Gauge -->
+              <div class="score-summary-row">
+                <div class="gauge-wrapper">
+                  <svg class="gauge-svg" viewBox="0 0 120 120">
+                    <circle class="gauge-bg" cx="60" cy="60" r="54"></circle>
+                    <circle id="gaugeCircle" class="gauge-val" cx="60" cy="60" r="54"></circle>
+                  </svg>
+                  <div class="gauge-center">
+                    <div class="gauge-number" id="resScoreNum">0</div>
+                    <div class="gauge-label">/ 100</div>
+                  </div>
+                </div>
+
+                <div class="score-meta">
+                  <div id="resTierBadge" class="badge-tier tier-hot">Hot Lead</div>
+                  <div id="resVerdict" class="lead-verdict">Strong purchase intent with executive authority.</div>
+                  <div id="resConfidenceText" class="confidence-tag">100% of data points available.</div>
+                </div>
+              </div>
+
+              <!-- Next Action Recommended -->
+              <div class="next-action-card">
+                <div class="action-header">Recommended Next Action (SLA)</div>
+                <div class="action-text" id="resActionText">Call within 24 hours & schedule product demo</div>
+              </div>
+
+              <!-- Key Positives & Deductions -->
+              <div class="factors-grid">
+                <div class="factor-col">
+                  <div class="factor-title pos">✓ Positive Drivers</div>
+                  <ul class="factor-list" id="resPositivesList"></ul>
+                </div>
+                <div class="factor-col">
+                  <div class="factor-title neg">⚠ Deductions / Missing</div>
+                  <ul class="factor-list" id="resNegativesList"></ul>
+                </div>
+              </div>
+
+              <!-- Breakdown Table -->
+              <div style="margin-bottom: 16px;">
+                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+                  Weighted Breakdown
+                </div>
+                <table class="breakdown-table">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th style="width: 100px;">Earned / Max</th>
+                      <th style="width: 140px;">Impact</th>
+                    </tr>
+                  </thead>
+                  <tbody id="resBreakdownBody"></tbody>
+                </table>
+              </div>
+
+              <!-- Scoring Explanation Paragraph -->
+              <div class="explanation-box">
+                <div class="explanation-header">
+                  <span class="explanation-title">Scoring Explanation</span>
+                  <button type="button" id="btnAiRefine" class="btn btn-secondary btn-sm" onclick="handleAiRefine()" title="Generate custom executive summary with Gemini/OpenAI">
+                    ✨ Refine with AI
+                  </button>
+                </div>
+                <p id="resExplanationText"></p>
+              </div>
+
             </div>
 
-            <!-- Key Positives & Deductions -->
-            <div class="factors-grid">
-              <div class="factor-col">
-                <div class="factor-title pos">✓ Positive Drivers</div>
-                <ul class="factor-list" id="resPositivesList"></ul>
+          </div>
+
+        </div>
+
+        <!-- What-If Weight Simulator (Collapsible) -->
+        <div class="card simulator-card">
+          <button type="button" class="simulator-toggle-btn" onclick="toggleSimulator()">
+            <div>
+              <span style="font-size: 16px; font-weight: 700; color: var(--text-main);">🔬 What-If Weight Simulator</span>
+              <p style="font-size: 12px; color: var(--text-muted);">Adjust individual scoring weights and see how lead scores, tiers, and test benchmarks react live.</p>
+            </div>
+            <span id="simToggleArrow" style="font-size: 20px; color: var(--primary);">▼</span>
+          </button>
+
+          <div id="simPanelContent" style="display: none; margin-top: 16px;">
+            
+            <div class="simulator-status-bar">
+              <div>
+                <strong id="simTotalWeights">Total Weights: 100 / 100</strong>
+                <span id="simNormalNote" style="color: var(--text-muted); margin-left: 8px;">(Standard scale)</span>
               </div>
-              <div class="factor-col">
-                <div class="factor-title neg">⚠ Deductions / Missing</div>
-                <ul class="factor-list" id="resNegativesList"></ul>
-              </div>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="resetWeightsToDefault()">
+                ↺ Reset to Default Weights
+              </button>
             </div>
 
-            <!-- Breakdown Table -->
-            <div style="margin-bottom: 16px;">
-              <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
-                Weighted Breakdown
+            <!-- 7 Sliders -->
+            <div class="slider-grid">
+              
+              <div class="slider-item">
+                <div class="slider-header">
+                  <span>Job Title Weight</span>
+                  <span class="slider-val" id="val-jobTitle">20</span>
+                </div>
+                <input type="range" class="weight-range" id="slider-jobTitle" min="0" max="40" value="20" oninput="handleWeightSliderChange('jobTitle', this.value)">
               </div>
-              <table class="breakdown-table">
+
+              <div class="slider-item">
+                <div class="slider-header">
+                  <span>Requirement Weight</span>
+                  <span class="slider-val" id="val-requirement">20</span>
+                </div>
+                <input type="range" class="weight-range" id="slider-requirement" min="0" max="40" value="20" oninput="handleWeightSliderChange('requirement', this.value)">
+              </div>
+
+              <div class="slider-item">
+                <div class="slider-header">
+                  <span>Company Size Weight</span>
+                  <span class="slider-val" id="val-companySize">15</span>
+                </div>
+                <input type="range" class="weight-range" id="slider-companySize" min="0" max="40" value="15" oninput="handleWeightSliderChange('companySize', this.value)">
+              </div>
+
+              <div class="slider-item">
+                <div class="slider-header">
+                  <span>Industry Weight</span>
+                  <span class="slider-val" id="val-industry">15</span>
+                </div>
+                <input type="range" class="weight-range" id="slider-industry" min="0" max="40" value="15" oninput="handleWeightSliderChange('industry', this.value)">
+              </div>
+
+              <div class="slider-item">
+                <div class="slider-header">
+                  <span>Lead Source Weight</span>
+                  <span class="slider-val" id="val-leadSource">10</span>
+                </div>
+                <input type="range" class="weight-range" id="slider-leadSource" min="0" max="40" value="10" oninput="handleWeightSliderChange('leadSource', this.value)">
+              </div>
+
+              <div class="slider-item">
+                <div class="slider-header">
+                  <span>Contact Details Weight</span>
+                  <span class="slider-val" id="val-contact">10</span>
+                </div>
+                <input type="range" class="weight-range" id="slider-contact" min="0" max="40" value="10" oninput="handleWeightSliderChange('contact', this.value)">
+              </div>
+
+              <div class="slider-item">
+                <div class="slider-header">
+                  <span>Location Weight</span>
+                  <span class="slider-val" id="val-location">10</span>
+                </div>
+                <input type="range" class="weight-range" id="slider-location" min="0" max="40" value="10" oninput="handleWeightSliderChange('location', this.value)">
+              </div>
+
+            </div>
+
+            <!-- Benchmark Leads Impact Table -->
+            <div style="margin-top: 16px;">
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">
+                Live Benchmark Impact (Current Weights vs Default)
+              </div>
+              <table class="sim-table">
                 <thead>
                   <tr>
-                    <th>Category</th>
-                    <th style="width: 100px;">Earned / Max</th>
-                    <th style="width: 140px;">Impact</th>
+                    <th>Lead</th>
+                    <th>Original</th>
+                    <th>New</th>
+                    <th>Class Change</th>
                   </tr>
                 </thead>
-                <tbody id="resBreakdownBody"></tbody>
+                <tbody id="simBenchmarkBody"></tbody>
               </table>
             </div>
 
-            <!-- Scoring Explanation Paragraph -->
-            <div class="explanation-box">
-              <div class="explanation-header">
-                <span class="explanation-title">Scoring Explanation</span>
-                <button type="button" id="btnAiRefine" class="btn btn-secondary btn-sm" onclick="handleAiRefine()" title="Generate custom executive summary with Gemini/OpenAI">
-                  ✨ Refine with AI
-                </button>
-              </div>
-              <p id="resExplanationText"></p>
-            </div>
-
           </div>
-
         </div>
 
-      </div>
+      </section>
 
-      <!-- What-If Weight Simulator (Collapsible) -->
-      <div class="card simulator-card">
-        <button type="button" class="simulator-toggle-btn" onclick="toggleSimulator()">
-          <div>
-            <span style="font-size: 16px; font-weight: 700; color: var(--text-main);">🔬 What-If Weight Simulator</span>
-            <p style="font-size: 12px; color: var(--text-muted);">Adjust individual scoring weights and see how lead scores, tiers, and test benchmarks react live.</p>
-          </div>
-          <span id="simToggleArrow" style="font-size: 20px; color: var(--primary);">▼</span>
-        </button>
-
-        <div id="simPanelContent" style="display: none; margin-top: 16px;">
-          
-          <div class="simulator-status-bar">
+      <!-- TAB 3: METHODOLOGY -->
+      <section id="tab-methodology" class="tab-content">
+        <div class="card">
+          <div class="card-header">
             <div>
-              <strong id="simTotalWeights">Total Weights: 100 / 100</strong>
-              <span id="simNormalNote" style="color: var(--text-muted); margin-left: 8px;">(Standard scale)</span>
+              <h2 class="card-title">Scoring Methodology & Criteria</h2>
+              <p class="card-subtitle">Transparent weighted scoring rules (Total: 100 Points)</p>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="resetWeightsToDefault()">
-              ↺ Reset to Default Weights
-            </button>
+            <span class="badge-tag">100% Deterministic</span>
           </div>
-
-          <!-- 7 Sliders -->
-          <div class="slider-grid">
-            
-            <div class="slider-item">
-              <div class="slider-header">
-                <span>Job Title Weight</span>
-                <span class="slider-val" id="val-jobTitle">20</span>
-              </div>
-              <input type="range" class="weight-range" id="slider-jobTitle" min="0" max="40" value="20" oninput="handleWeightSliderChange('jobTitle', this.value)">
-            </div>
-
-            <div class="slider-item">
-              <div class="slider-header">
-                <span>Requirement Weight</span>
-                <span class="slider-val" id="val-requirement">20</span>
-              </div>
-              <input type="range" class="weight-range" id="slider-requirement" min="0" max="40" value="20" oninput="handleWeightSliderChange('requirement', this.value)">
-            </div>
-
-            <div class="slider-item">
-              <div class="slider-header">
-                <span>Company Size Weight</span>
-                <span class="slider-val" id="val-companySize">15</span>
-              </div>
-              <input type="range" class="weight-range" id="slider-companySize" min="0" max="40" value="15" oninput="handleWeightSliderChange('companySize', this.value)">
-            </div>
-
-            <div class="slider-item">
-              <div class="slider-header">
-                <span>Industry Weight</span>
-                <span class="slider-val" id="val-industry">15</span>
-              </div>
-              <input type="range" class="weight-range" id="slider-industry" min="0" max="40" value="15" oninput="handleWeightSliderChange('industry', this.value)">
-            </div>
-
-            <div class="slider-item">
-              <div class="slider-header">
-                <span>Lead Source Weight</span>
-                <span class="slider-val" id="val-leadSource">10</span>
-              </div>
-              <input type="range" class="weight-range" id="slider-leadSource" min="0" max="40" value="10" oninput="handleWeightSliderChange('leadSource', this.value)">
-            </div>
-
-            <div class="slider-item">
-              <div class="slider-header">
-                <span>Contact Details Weight</span>
-                <span class="slider-val" id="val-contact">10</span>
-              </div>
-              <input type="range" class="weight-range" id="slider-contact" min="0" max="40" value="10" oninput="handleWeightSliderChange('contact', this.value)">
-            </div>
-
-            <div class="slider-item">
-              <div class="slider-header">
-                <span>Location Weight</span>
-                <span class="slider-val" id="val-location">10</span>
-              </div>
-              <input type="range" class="weight-range" id="slider-location" min="0" max="40" value="10" oninput="handleWeightSliderChange('location', this.value)">
-            </div>
-
-          </div>
-
-          <!-- Benchmark Leads Impact Table -->
-          <div style="margin-top: 16px;">
-            <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">
-              Live Benchmark Impact (Current Weights vs Default)
-            </div>
-            <table class="sim-table">
-              <thead>
-                <tr>
-                  <th>Lead</th>
-                  <th>Original</th>
-                  <th>New</th>
-                  <th>Class Change</th>
-                </tr>
-              </thead>
-              <tbody id="simBenchmarkBody"></tbody>
-            </table>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-
-    <!-- TAB 2: METHODOLOGY -->
-    <div id="tab-methodology" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">Scoring Methodology & Criteria</h2>
-          <span class="badge-tag">Total: 100 Points</span>
-        </div>
-        
-        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
-          This algorithm uses an explainable, deterministic weighted ruleset. Each lead attribute is evaluated against commercial intent, ideal customer profile (ICP) fit, and outreach viability.
-        </p>
-
-        <table class="breakdown-table">
-          <thead>
-            <tr>
-              <th style="width: 160px;">Attribute</th>
-              <th style="width: 90px;">Max Weight</th>
-              <th>Scoring Criteria & Logic</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Job Title</strong></td>
-              <td>20 pts</td>
-              <td>
-                • <strong>20 pts:</strong> Founder, CEO, Owner, Director, VP (C-Level / Key Decision Maker)<br>
-                • <strong>12 pts:</strong> Manager, Head, Lead (Influencer / Department Head)<br>
-                • <strong>5 pts:</strong> Any other specified job title (Individual Contributor)<br>
-                • <strong>0 pts:</strong> Field left blank
-              </td>
-            </tr>
-            <tr>
-              <td><strong>Requirement</strong></td>
-              <td>20 pts</td>
-              <td>
-                • <strong>20 pts:</strong> Text contains intent keywords: <code>CRM</code>, <code>software</code>, <code>ERP</code>, <code>automation</code>, <code>solution</code>, <code>demo</code>, or <code>pricing</code><br>
-                • <strong>8 pts:</strong> Text provided without specific commercial intent keywords<br>
-                • <strong>0 pts:</strong> No requirement specified
-              </td>
-            </tr>
-            <tr>
-              <td><strong>Company Size</strong></td>
-              <td>15 pts</td>
-              <td>
-                • <strong>15 pts:</strong> 50-100 or 100-500 employees (Prime target mid-market sweet spot)<br>
-                • <strong>12 pts:</strong> 500+ employees (Enterprise tier)<br>
-                • <strong>10 pts:</strong> 10-50 employees (Growing small business)<br>
-                • <strong>5 pts:</strong> 1-10 employees (Micro startup)<br>
-                • <strong>0 pts:</strong> Not provided
-              </td>
-            </tr>
-            <tr>
-              <td><strong>Industry</strong></td>
-              <td>15 pts</td>
-              <td>
-                • <strong>15 pts:</strong> IT Services, SaaS, Finance, E-commerce (High adoption ICP)<br>
-                • <strong>7 pts:</strong> Other non-empty industry (Secondary sectors)<br>
-                • <strong>0 pts:</strong> Not selected
-              </td>
-            </tr>
-            <tr>
-              <td><strong>Lead Source</strong></td>
-              <td>10 pts</td>
-              <td>
-                • <strong>10 pts:</strong> Website or Referral (High-intent inbound)<br>
-                • <strong>7 pts:</strong> LinkedIn or Event (Warm outreach)<br>
-                • <strong>3 pts:</strong> Cold List or Other (Outbound / Unsolicited)<br>
-                • <strong>0 pts:</strong> Not selected
-              </td>
-            </tr>
-            <tr>
-              <td><strong>Contact Details</strong></td>
-              <td>10 pts</td>
-              <td>
-                • <strong>Corporate Email (4 pts):</strong> Corporate domain email = 4 pts. Free webmail (<code>gmail</code>, <code>yahoo</code>, <code>hotmail</code>, <code>example.com</code>) = 2 pts. Missing = 0 pts.<br>
-                • <strong>Valid Phone (3 pts):</strong> 10-13 digit phone number provided = 3 pts. Missing = 0 pts.<br>
-                • <strong>Company Website (3 pts):</strong> Valid web domain provided = 3 pts. Missing = 0 pts.
-              </td>
-            </tr>
-            <tr>
-              <td><strong>Company Location</strong></td>
-              <td>10 pts</td>
-              <td>
-                • <strong>10 pts:</strong> Target Tier-1 Indian tech hubs: Bangalore, Mumbai, Delhi, Hyderabad, Pune, Chennai, Gurgaon, Noida<br>
-                • <strong>6 pts:</strong> Any other specified city/region<br>
-                • <strong>0 pts:</strong> Field left blank
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 24px;">
-          <div style="background: var(--hot-bg); border: 1px solid #fecaca; border-radius: 8px; padding: 14px;">
-            <div style="font-weight: 700; color: var(--hot-color); font-size: 14px;">🔥 Hot Leads (Score ≥ 70)</div>
-            <p style="font-size: 12px; color: #7f1d1d; margin-top: 4px;">High ICP fit, executive authority, urgent requirement. Call within 24 hours & schedule product demo.</p>
-          </div>
-          <div style="background: var(--warm-bg); border: 1px solid #fed7aa; border-radius: 8px; padding: 14px;">
-            <div style="font-weight: 700; color: var(--warm-color); font-size: 14px;">⚡ Warm Leads (Score 40-69)</div>
-            <p style="font-size: 12px; color: #78350f; margin-top: 4px;">Moderate ICP fit or influencer level. Send personalised email and schedule a follow-up in 3 days.</p>
-          </div>
-          <div style="background: var(--cold-bg); border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px;">
-            <div style="font-weight: 700; color: var(--cold-color); font-size: 14px;">❄️ Cold Leads (Score &lt; 40)</div>
-            <p style="font-size: 12px; color: #1e3a8a; margin-top: 4px;">Low fit, missing contact points, or micro business. Enroll into automated nurture newsletter campaigns.</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- TAB 3: TEST CASES -->
-    <div id="tab-test-cases" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">Benchmark Test Leads</h2>
-          <span style="font-size: 12px; color: var(--text-muted);">One-click validation of scoring accuracy</span>
-        </div>
-        
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
-          Click "Load & Score" on any test case to populate the form and evaluate the exact deterministic breakdown.
-        </p>
-
-        <div class="test-cases-grid" id="testCasesContainer">
-          <!-- Rendered dynamically by JS -->
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 4: HISTORY -->
-    <div id="tab-history" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">Lead Scoring Audit Log</h2>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="exportHistoryToCsv()">
-              📥 Export CSV
-            </button>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="clearLeadHistory()">
-              🗑 Clear History
-            </button>
-          </div>
-        </div>
-
-        <!-- Metric Summary Strip -->
-        <div class="summary-strip">
-          <div class="metric-card">
-            <div class="metric-val" id="metricTotal">0</div>
-            <div class="metric-title">Total Leads</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-val" id="metricHot" style="color: var(--hot-color);">0</div>
-            <div class="metric-title">Hot Leads</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-val" id="metricWarm" style="color: var(--warm-color);">0</div>
-            <div class="metric-title">Warm Leads</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-val" id="metricCold" style="color: var(--cold-color);">0</div>
-            <div class="metric-title">Cold Leads</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-val" id="metricAvg">0</div>
-            <div class="metric-title">Avg Score</div>
-          </div>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table class="history-table">
+          
+          <table class="breakdown-table">
             <thead>
               <tr>
-                <th>Time</th>
-                <th>Lead / Company</th>
-                <th>Job Title</th>
-                <th>Score</th>
-                <th>Tier</th>
-                <th>Action</th>
-                <th style="width: 80px;">Action</th>
+                <th style="width: 160px;">Attribute</th>
+                <th style="width: 90px;">Max Weight</th>
+                <th>Scoring Criteria & Logic</th>
               </tr>
             </thead>
-            <tbody id="historyTableBody">
+            <tbody>
               <tr>
-                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
-                  No leads scored yet. Score a lead to build your audit log.
+                <td><strong>Job Title</strong></td>
+                <td>20 pts</td>
+                <td>
+                  • <strong>20 pts:</strong> Founder, CEO, Owner, Director, VP (C-Level / Key Decision Maker)<br>
+                  • <strong>12 pts:</strong> Manager, Head, Lead (Department Head / Influencer)<br>
+                  • <strong>5 pts:</strong> Any other specified job title (Individual Contributor)<br>
+                  • <strong>0 pts:</strong> Field left blank
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Requirement</strong></td>
+                <td>20 pts</td>
+                <td>
+                  • <strong>20 pts:</strong> Text contains intent keywords: <code>CRM</code>, <code>software</code>, <code>ERP</code>, <code>automation</code>, <code>solution</code>, <code>demo</code>, or <code>pricing</code><br>
+                  • <strong>8 pts:</strong> Text provided without specific commercial intent keywords<br>
+                  • <strong>0 pts:</strong> No requirement specified
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Company Size</strong></td>
+                <td>15 pts</td>
+                <td>
+                  • <strong>15 pts:</strong> 50-100 or 100-500 employees (Target mid-market sweet spot)<br>
+                  • <strong>12 pts:</strong> 500+ employees (Large enterprise)<br>
+                  • <strong>10 pts:</strong> 10-50 employees (Growing small business)<br>
+                  • <strong>5 pts:</strong> 1-10 employees (Micro team)<br>
+                  • <strong>0 pts:</strong> Not provided
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Industry</strong></td>
+                <td>15 pts</td>
+                <td>
+                  • <strong>15 pts:</strong> IT Services, SaaS, Finance, E-commerce (High adoption ICP)<br>
+                  • <strong>7 pts:</strong> Other non-empty industry (Secondary sectors)<br>
+                  • <strong>0 pts:</strong> Not selected
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Lead Source</strong></td>
+                <td>10 pts</td>
+                <td>
+                  • <strong>10 pts:</strong> Website or Referral (High-intent inbound)<br>
+                  • <strong>7 pts:</strong> LinkedIn or Event (Warm outreach)<br>
+                  • <strong>3 pts:</strong> Cold List or Other (Outbound / Unsolicited)<br>
+                  • <strong>0 pts:</strong> Not selected
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Contact Details</strong></td>
+                <td>10 pts</td>
+                <td>
+                  • <strong>Corporate Email (4 pts):</strong> Corporate domain email = 4 pts. Free webmail (<code>gmail</code>, <code>yahoo</code>, <code>hotmail</code>, <code>example.com</code>) = 2 pts. Missing = 0 pts.<br>
+                  • <strong>Valid Phone (3 pts):</strong> 10-13 digit phone number provided = 3 pts. Missing = 0 pts.<br>
+                  • <strong>Company Website (3 pts):</strong> Valid web domain provided = 3 pts. Missing = 0 pts.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Company Location</strong></td>
+                <td>10 pts</td>
+                <td>
+                  • <strong>10 pts:</strong> Target Tier-1 Indian tech hubs: Bangalore, Mumbai, Delhi, Hyderabad, Pune, Chennai, Gurgaon, Noida<br>
+                  • <strong>6 pts:</strong> Any other specified city/region<br>
+                  • <strong>0 pts:</strong> Field left blank
                 </td>
               </tr>
             </tbody>
           </table>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 24px;">
+            <div style="background: var(--hot-bg); border: 1px solid var(--hot-border); border-radius: var(--radius-sm); padding: 14px;">
+              <div style="font-weight: 700; color: var(--hot-color); font-size: 14px;">🔥 Hot Leads (Score ≥ 70)</div>
+              <p style="font-size: 12px; color: #7f1d1d; margin-top: 4px;">High ICP fit, executive authority, urgent requirement. Call within 24 hours & schedule product demo.</p>
+            </div>
+            <div style="background: var(--warm-bg); border: 1px solid var(--warm-border); border-radius: var(--radius-sm); padding: 14px;">
+              <div style="font-weight: 700; color: var(--warm-color); font-size: 14px;">⚡ Warm Leads (Score 40-69)</div>
+              <p style="font-size: 12px; color: #78350f; margin-top: 4px;">Moderate ICP fit or influencer level. Send personalised email and schedule a follow-up in 3 days.</p>
+            </div>
+            <div style="background: var(--cold-bg); border: 1px solid var(--cold-border); border-radius: var(--radius-sm); padding: 14px;">
+              <div style="font-weight: 700; color: var(--cold-color); font-size: 14px;">❄️ Cold Leads (Score &lt; 40)</div>
+              <p style="font-size: 12px; color: #1e3a8a; margin-top: 4px;">Low fit, missing contact points, or micro business. Enroll into automated nurture newsletter campaigns.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 4: BENCHMARK TEST CASES -->
+      <section id="tab-test-cases" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Benchmark Test Leads</h2>
+              <p class="card-subtitle">One-click evaluation of 5 standard validation archetypes</p>
+            </div>
+            <span class="badge-tag">5 Presets</span>
+          </div>
+
+          <div class="test-cases-grid" id="testCasesContainer">
+            <!-- Populated dynamically by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: AUDIT HISTORY -->
+      <section id="tab-history" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Lead Scoring Audit Log</h2>
+              <p class="card-subtitle">Stored in browser localStorage with live sensitivity reflection</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="exportHistoryToCsv()">
+                📥 Export CSV
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="clearLeadHistory()">
+                🗑 Clear History
+              </button>
+            </div>
+          </div>
+
+          <!-- Metric Summary Strip -->
+          <div class="summary-strip">
+            <div class="metric-card">
+              <div class="metric-val" id="metricTotal">0</div>
+              <div class="metric-title">Total Leads</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-val" id="metricHot" style="color: var(--hot-color);">0</div>
+              <div class="metric-title">Hot Leads</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-val" id="metricWarm" style="color: var(--warm-color);">0</div>
+              <div class="metric-title">Warm Leads</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-val" id="metricCold" style="color: var(--cold-color);">0</div>
+              <div class="metric-title">Cold Leads</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-val" id="metricAvg">0</div>
+              <div class="metric-title">Avg Score</div>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Lead / Company</th>
+                  <th>Job Title</th>
+                  <th>Score</th>
+                  <th>Tier</th>
+                  <th>Next Action</th>
+                  <th style="width: 80px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <tr>
+                  <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                    No leads scored yet. Score a lead to build your audit log.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 6: AI SETTINGS (LLM) -->
+      <section id="tab-settings" class="tab-content">
+        <div class="card" style="max-width: 640px; margin: 0 auto;">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">AI Explanation Settings (Optional)</h2>
+              <p class="card-subtitle">Integrate Google Gemini or OpenAI for executive briefings</p>
+            </div>
+            <span class="badge-tag">Client-Side Only</span>
+          </div>
+
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+            The scoring system is 100% deterministic and runs entirely client-side. The LLM is <strong>strictly used to rewrite the scoring explanation</strong> into an executive sales briefing ("do not change the score").
+          </p>
+
+          <div style="background: #f1f5f9; border-left: 3px solid var(--primary); padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 20px;">
+            <strong>🔒 Security & Privacy:</strong> Your API key is stored exclusively in your browser's <code>localStorage</code>. It is never transmitted to any third-party server.
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="aiProvider">AI Provider</label>
+            <select id="aiProvider" class="select-field">
+              <option value="gemini">Google Gemini (gemini-1.5-flash / gemini-2.0)</option>
+              <option value="openai">OpenAI (gpt-4o-mini)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="apiKeyInput">API Key</label>
+            <input type="password" id="apiKeyInput" class="input-field" placeholder="Paste your Gemini or OpenAI API key here">
+            <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+              Leave blank to use the built-in deterministic explanation generator.
+            </span>
+          </div>
+
+          <div class="form-actions" style="margin-top: 20px;">
+            <button type="button" class="btn btn-primary" onclick="saveApiKey()">
+              Save Settings
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="clearApiKey()">
+              Remove Key
+            </button>
+          </div>
+
+          <div id="apiKeyStatus" style="font-size: 12px; margin-top: 12px; min-height: 18px;"></div>
+        </div>
+      </section>
+
+      <!-- TAB 7: ABOUT AUTHOR (Priya Sharma) -->
+      <section id="tab-author" class="tab-content">
+        
+        <div class="author-hero">
+          <div class="author-avatar-large">PS</div>
+          <div>
+            <h2 class="author-bio-title">Priya Sharma</h2>
+            <div class="author-bio-subtitle">AI/ML Intern Candidate • Leadonspot Evaluation (Round 2)</div>
+            <p class="author-bio-text">
+              Passionate engineering student specializing in Artificial Intelligence and Machine Learning. 
+              Focused on building production-ready, explainable AI solutions, deterministic scoring engines, 
+              and human-centered software architectures.
+            </p>
+          </div>
         </div>
 
-      </div>
-    </div>
+        <div class="grid-2col">
+          
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom: 12px;">Candidate Statement & Project Vision</h3>
+            <p style="font-size: 13px; color: #334155; line-height: 1.6; margin-bottom: 12px;">
+              For this assignment, my objective was not just to write code that works, but to build a tool that a real B2B sales team would trust every day.
+            </p>
+            <p style="font-size: 13px; color: #334155; line-height: 1.6; margin-bottom: 12px;">
+              I intentionally decoupled the <strong>scoring engine</strong> from generative AI. In B2B sales, compliance and predictability matter: if a lead is scored 98 on Monday, it must score 98 on Friday. The LLM is used strictly as an intelligence amplifier to draft concise briefings.
+            </p>
+            <p style="font-size: 13px; color: #334155; line-height: 1.6;">
+              Thank you to the <strong>Leadonspot Evaluation Team</strong> for reviewing my work!
+            </p>
+          </div>
 
-    <!-- TAB 5: AI SETTINGS -->
-    <div id="tab-settings" class="tab-content">
-      <div class="card" style="max-width: 640px; margin: 0 auto;">
-        <div class="card-header">
-          <h2 class="card-title">AI Explanation Settings (Optional)</h2>
-          <span class="badge-tag">LLM Enhancement</span>
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom: 12px;">Technical Skills Demonstrated</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #334155;">
+              <li><strong>• Deterministic Algorithms:</strong> Explainable weighted scoring with proportional sensitivity tuning.</li>
+              <li><strong>• Defensive Engineering:</strong> Zero-crash design with graceful missing-data handling and confidence scoring.</li>
+              <li><strong>• Pure Vanilla Stack:</strong> Single-file zero-dependency HTML5/CSS3/ES6 implementation.</li>
+              <li><strong>• User-Centric UI/UX:</strong> Real-time validation, responsive sidebar navigation, SVG circular gauges, and micro-interactions.</li>
+              <li><strong>• Data Persistence:</strong> RFC-4180 compliant CSV export and localStorage audit history.</li>
+            </ul>
+
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="switchTab('tab-scorer')">
+                Test Lead Scorer
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="switchTab('tab-methodology')">
+                View Rules Matrix
+              </button>
+            </div>
+          </div>
+
         </div>
 
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-          The scoring system is 100% deterministic and runs entirely client-side. The LLM is <strong>strictly used to rewrite the scoring explanation</strong> into an executive sales briefing ("do not change the score").
-        </p>
+      </section>
 
-        <div style="background: #f1f5f9; border-left: 3px solid var(--primary); padding: 10px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 20px;">
-          <strong>🔒 Security & Privacy:</strong> Your API key is stored exclusively in your browser's <code>localStorage</code>. It is never transmitted to any third-party server.
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="aiProvider">AI Provider</label>
-          <select id="aiProvider" class="select-field">
-            <option value="gemini">Google Gemini (gemini-1.5-flash / gemini-2.0)</option>
-            <option value="openai">OpenAI (gpt-4o-mini)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="apiKeyInput">API Key</label>
-          <input type="password" id="apiKeyInput" class="input-field" placeholder="Paste your Gemini or OpenAI API key here">
-          <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
-            Leave blank to use the built-in deterministic explanation generator.
-          </span>
-        </div>
-
-        <div class="form-actions" style="margin-top: 20px;">
-          <button type="button" class="btn btn-primary" onclick="saveApiKey()">
-            Save Settings
-          </button>
-          <button type="button" class="btn btn-secondary" onclick="clearApiKey()">
-            Remove Key
-          </button>
-        </div>
-
-        <div id="apiKeyStatus" style="font-size: 12px; margin-top: 12px; min-height: 18px;"></div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <footer>
-      <p>Lead Scorer • Built by <strong>Priya Sharma</strong> for Leadonspot AI/ML Intern Evaluation (Round 2)</p>
-      <p style="font-size: 11px; margin-top: 4px; color: #94a3b8;">Deterministic Weighted Scoring Engine • Zero External CDNs • Client-Side Execution</p>
-    </footer>
+    </main>
 
   </div>
 
   <script>
     // ==========================================
-    // 1. SCORING WEIGHTS & CONSTANTS
+    // 1. SCORING WEIGHTS & CONFIGURATION
     // ==========================================
     const SCORING_WEIGHTS = {
       jobTitle: 20,
@@ -1420,6 +1961,7 @@
     // Active lead result cache
     let currentLeadData = null;
     let currentLeadResult = null;
+    let formSubmitted = false;
 
     // Target cities for top tier location score
     const TARGET_CITIES = [
@@ -1534,7 +2076,7 @@
     ];
 
     // ==========================================
-    // 2. VALIDATION HELPERS
+    // 2. FORM VALIDATION HELPERS
     // ==========================================
     function isValidEmail(email) {
       if (!email || email.trim() === "") return true;
@@ -1555,8 +2097,6 @@
       return pattern.test(url.trim());
     }
 
-    let formSubmitted = false;
-
     function validateForm(showErrors = true) {
       if (showErrors) formSubmitted = true;
       const name = document.getElementById("leadName").value.trim();
@@ -1567,7 +2107,7 @@
 
       let isValid = true;
 
-      // Validate Contact Name
+      // Contact Name Validation
       if (name.length === 0) {
         if (showErrors && formSubmitted) {
           document.getElementById("err-leadName").textContent = "Contact name is required";
@@ -1582,7 +2122,7 @@
         document.getElementById("leadName").classList.remove("input-error");
       }
 
-      // Validate Company Name
+      // Company Name Validation
       if (company.length === 0) {
         if (showErrors && formSubmitted) {
           document.getElementById("err-companyName").textContent = "Company name is required";
@@ -1597,7 +2137,7 @@
         document.getElementById("companyName").classList.remove("input-error");
       }
 
-      // Validate Email (optional, but must be valid if given)
+      // Email Format Validation
       if (!isValidEmail(email)) {
         if (showErrors) {
           document.getElementById("err-email").textContent = "Enter a valid email (e.g. name@domain.com)";
@@ -1609,7 +2149,7 @@
         document.getElementById("email").classList.remove("input-error");
       }
 
-      // Validate Phone (optional, but 10-13 digits if given)
+      // Phone Format Validation (10-13 digits)
       if (!isValidPhone(phone)) {
         if (showErrors) {
           document.getElementById("err-phone").textContent = "Must contain 10-13 digits";
@@ -1621,7 +2161,7 @@
         document.getElementById("phone").classList.remove("input-error");
       }
 
-      // Validate Website (optional, domain format)
+      // Website Domain Validation
       if (!isValidWebsite(website)) {
         if (showErrors) {
           document.getElementById("err-website").textContent = "Enter a valid website (e.g. domain.com)";
@@ -1633,7 +2173,6 @@
         document.getElementById("website").classList.remove("input-error");
       }
 
-      // Toggle Score Button
       const scoreBtn = document.getElementById("btnSubmitScore");
       scoreBtn.disabled = !isValid;
       return isValid;
@@ -1769,7 +2308,6 @@
         notes.push({ text: "Company website missing (0 pts)", isPositive: false });
       }
 
-      // Cap earned points to maxWeight
       earned = Math.min(earned, maxWeight);
       return { points: earned, max: maxWeight, notes: notes };
     }
@@ -1802,7 +2340,6 @@
         location: getLocationPoints(lead.location, weights.location)
       };
 
-      // Sum points and max weights
       let rawEarned = 0;
       let totalMax = 0;
       for (const key in weights) {
@@ -1812,7 +2349,6 @@
         }
       }
 
-      // Calculate normalized score (0-100)
       let score = 0;
       if (totalMax > 0) {
         if (totalMax === 100) {
@@ -1823,7 +2359,6 @@
       }
       score = Math.max(0, Math.min(100, score));
 
-      // Classification Tier
       let classification = "Cold";
       if (score >= 70) {
         classification = "Hot";
@@ -1831,7 +2366,6 @@
         classification = "Warm";
       }
 
-      // Next Action
       let action = "Nurture newsletter";
       if (classification === "Hot") {
         action = "Call within 24h & book demo";
@@ -1839,7 +2373,6 @@
         action = "Personalised email & follow up in 3 days";
       }
 
-      // Confidence Score (% fields filled out of 11)
       const totalFields = 11;
       let filledFields = 0;
       if (lead.name?.trim()) filledFields++;
@@ -1862,41 +2395,32 @@
         confidence = "Medium";
       }
 
-      // Extract positive and negative drivers
       const positives = [];
       const negatives = [];
 
-      // Job Title
       if (breakdown.jobTitle.isPositive) positives.push(breakdown.jobTitle.note);
       else negatives.push(breakdown.jobTitle.note);
 
-      // Requirement
       if (breakdown.requirement.isPositive) positives.push(breakdown.requirement.note);
       else negatives.push(breakdown.requirement.note);
 
-      // Company Size
       if (breakdown.companySize.isPositive) positives.push(breakdown.companySize.note);
       else negatives.push(breakdown.companySize.note);
 
-      // Industry
       if (breakdown.industry.isPositive) positives.push(breakdown.industry.note);
       else negatives.push(breakdown.industry.note);
 
-      // Lead Source
       if (breakdown.leadSource.isPositive) positives.push(breakdown.leadSource.note);
       else negatives.push(breakdown.leadSource.note);
 
-      // Location
       if (breakdown.location.isPositive) positives.push(breakdown.location.note);
       else negatives.push(breakdown.location.note);
 
-      // Contact factors
       breakdown.contact.notes.forEach(item => {
         if (item.isPositive) positives.push(item.text);
         else negatives.push(item.text);
       });
 
-      // Generate Explanation
       const explanation = generateExplanation(lead, score, classification, confidence, action, breakdown);
 
       return {
@@ -1938,27 +2462,22 @@
     // 6. UI RENDERING & ANIMATIONS
     // ==========================================
     function showResults(lead, result) {
-      // Show container
       document.getElementById("resultsEmpty").style.display = "none";
       const activeEl = document.getElementById("resultsActive");
       activeEl.style.display = "block";
 
-      // Lead Header
       document.getElementById("resLeadTitle").textContent = lead.company || "Unnamed Company";
       document.getElementById("resLeadContact").textContent = `${lead.name || "Lead"} • ${lead.jobTitle || "No Title"} • ${lead.location || "Location not given"}`;
       
       const confBadge = document.getElementById("resConfidenceBadge");
       confBadge.textContent = `Confidence: ${result.confidence} (${result.fillPct}% filled)`;
 
-      // Animate Circular Gauge & Number
       animateScoreGauge(result.score, result.classification);
 
-      // Tier Badge
       const tierBadge = document.getElementById("resTierBadge");
       tierBadge.className = `badge-tier tier-${result.classification.toLowerCase()}`;
       tierBadge.textContent = `${result.classification} Lead`;
 
-      // Verdict Text
       const verdictEl = document.getElementById("resVerdict");
       if (result.classification === "Hot") {
         verdictEl.textContent = "High-priority commercial opportunity with strong qualification fit.";
@@ -1969,11 +2488,8 @@
       }
 
       document.getElementById("resConfidenceText").textContent = `${result.fillPct}% of contact and company data fields completed.`;
-
-      // Next Action
       document.getElementById("resActionText").textContent = result.action;
 
-      // Positive Drivers
       const posList = document.getElementById("resPositivesList");
       posList.innerHTML = "";
       if (result.positives.length === 0) {
@@ -1987,7 +2503,6 @@
         });
       }
 
-      // Negative Deductions
       const negList = document.getElementById("resNegativesList");
       negList.innerHTML = "";
       if (result.negatives.length === 0) {
@@ -2001,10 +2516,7 @@
         });
       }
 
-      // Breakdown Table
       renderBreakdownTable(result.breakdown);
-
-      // Explanation
       document.getElementById("resExplanationText").textContent = result.explanation;
     }
 
@@ -2050,7 +2562,6 @@
       const circumference = 339.29; // 2 * PI * 54
       const targetOffset = circumference * (1 - targetScore / 100);
 
-      // Set color by tier
       if (classification === "Hot") {
         gaugeCircle.style.stroke = "var(--hot-color)";
       } else if (classification === "Warm") {
@@ -2059,12 +2570,10 @@
         gaugeCircle.style.stroke = "var(--cold-color)";
       }
 
-      // Smooth stroke offset
       gaugeCircle.style.strokeDashoffset = targetOffset;
 
-      // Animate number counting up
       let currentVal = 0;
-      const duration = 600; // ms
+      const duration = 600;
       const startTime = performance.now();
 
       function updateNumber(timestamp) {
@@ -2107,7 +2616,6 @@
       updateSimulatorImpactTable();
       renderHistoryTable();
 
-      // If a lead is currently displayed, recalculate and refresh live
       if (currentLeadData) {
         currentLeadResult = scoreLead(currentLeadData, currentWeights);
         showResults(currentLeadData, currentLeadResult);
@@ -2179,7 +2687,7 @@
     }
 
     // ==========================================
-    // 8. STORAGE & HISTORY
+    // 8. STORAGE & AUDIT HISTORY
     // ==========================================
     const STORAGE_KEY = "lead_scorer_history_v1";
 
@@ -2205,7 +2713,6 @@
         confidence: result.confidence
       };
 
-      // Keep latest 50 entries
       list.unshift(entry);
       if (list.length > 50) list.pop();
 
@@ -2247,7 +2754,6 @@
 
       tbody.innerHTML = "";
       list.forEach(item => {
-        // Recalculate with current simulated weights
         const simRes = scoreLead(item.lead, currentWeights);
         const scoreDisplay = (simRes.score === item.score)
           ? `<strong>${item.score}</strong> / 100`
@@ -2404,7 +2910,6 @@
       const submitBtn = document.getElementById("btnSubmitScore");
       const originalText = submitBtn.innerHTML;
 
-      // Subtle loading state
       submitBtn.innerHTML = "⏳ Scoring Lead...";
       submitBtn.disabled = true;
 
@@ -2415,7 +2920,7 @@
         currentLeadData = lead;
         currentLeadResult = result;
 
-        displayResults(lead, result);
+        showResults(lead, result);
         saveHistoryEntry(lead, result);
 
         submitBtn.innerHTML = originalText;
@@ -2486,7 +2991,6 @@ Write a concise, high-impact 2-3 sentence executive briefing for the sales team 
           const data = await resp.json();
           aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         } else {
-          // OpenAI endpoint
           const endpoint = "https://api.openai.com/v1/chat/completions";
           const resp = await fetch(endpoint, {
             method: "POST",
@@ -2521,16 +3025,19 @@ Write a concise, high-impact 2-3 sentence executive briefing for the sales team 
     }
 
     // ==========================================
-    // 11. TAB CONTROLLER & INITIALIZATION
+    // 11. TAB ROUTING & INITIALIZATION
     // ==========================================
     function switchTab(tabId) {
       document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
-      document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
 
       const targetTab = document.getElementById(tabId);
-      if (targetTab) targetTab.classList.add("active");
+      if (targetTab) {
+        targetTab.classList.add("active");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
 
-      const targetBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+      const targetBtn = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
       if (targetBtn) targetBtn.classList.add("active");
 
       if (tabId === "tab-history") {
@@ -2583,7 +3090,7 @@ Write a concise, high-impact 2-3 sentence executive briefing for the sales team 
       handleFormSubmit();
     }
 
-    // App Startup
+    // App Startup Lifecycle
     window.addEventListener("DOMContentLoaded", () => {
       validateForm(false);
       renderHistoryTable();
@@ -2591,7 +3098,6 @@ Write a concise, high-impact 2-3 sentence executive briefing for the sales team 
       updateSimulatorStatus();
       updateSimulatorImpactTable();
 
-      // Load saved API key into settings field if exists
       const savedKey = localStorage.getItem("lead_scorer_api_key");
       const savedProvider = localStorage.getItem("lead_scorer_ai_provider");
       if (savedKey) {
